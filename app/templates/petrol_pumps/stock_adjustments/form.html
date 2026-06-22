@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "New" if mode == "create" else "Edit" }} Stock Adjustment · Petrol Pumps{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.stock_adjustments_list') }}">Stock Adjustments</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ "New" if mode == "create" else "Edit #" ~ adjustment.id }}</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-1">{{ "New Stock Adjustment" if mode == "create" else "Edit Stock Adjustment #" ~ adjustment.id }}</h1>
+<p class="text-muted mb-4">Enter the physical dip reading. The system stock is captured automatically and the
+difference is recorded as a <strong>pending</strong> gain/loss — tank stock changes only after approval.</p>
+
+<div class="row">
+    <div class="col-12 col-lg-7">
+        <form method="post" class="card">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="petrol_pump_id">Petrol Pump *</label>
+                        <select class="form-select" id="petrol_pump_id" name="petrol_pump_id" required>
+                            <option value="">Select pump…</option>
+                            {% for pump in pumps %}
+                            <option value="{{ pump.id }}" {{ "selected" if form.petrol_pump_id == pump.id else "" }}>{{ pump.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="tank_id">Tank *</label>
+                        <select class="form-select" id="tank_id" name="tank_id" required>
+                            <option value="">Select tank…</option>
+                            {% for tank in tanks %}
+                            <option value="{{ tank.id }}"
+                                    data-pump="{{ tank.petrol_pump_id }}"
+                                    data-stock="{{ tank.current_stock_liters }}"
+                                    data-product="{{ tank.product.name }}"
+                                    {{ "selected" if form.tank_id == tank.id else "" }}>
+                                {{ tank.petrol_pump.name }} — {{ tank.tank_name }} ({{ tank.product.name }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="adjustment_date">Adjustment Date *</label>
+                        <input type="date" class="form-control" id="adjustment_date" name="adjustment_date"
+                               value="{{ form.adjustment_date }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="physical_stock_liters">Physical Stock — Dip Reading (L) *</label>
+                        <input type="number" step="0.01" min="0" class="form-control" id="physical_stock_liters"
+                               name="physical_stock_liters" value="{{ form.physical_stock_liters }}" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="notes">Notes</label>
+                        <input type="text" class="form-control" id="notes" name="notes"
+                               value="{{ form.notes }}" maxlength="300" placeholder="e.g. monthly dip check">
+                    </div>
+                </div>
+            </div>
+            <div class="card-body border-top d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    {{ "Save Adjustment" if mode == "create" else "Update Adjustment" }}
+                </button>
+                <a href="{{ url_for('petrol_pumps.stock_adjustments_list') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-12 col-lg-5 mt-3 mt-lg-0">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h6 text-muted text-uppercase" style="letter-spacing:.08em">Live Preview</h2>
+                <table class="table mb-0">
+                    <tbody>
+                        <tr><th>Product</th><td id="pvProduct" class="text-end">—</td></tr>
+                        <tr><th>System (book) stock</th><td id="pvSystem" class="text-end">—</td></tr>
+                        <tr><th>Physical (dip) stock</th><td id="pvPhysical" class="text-end">—</td></tr>
+                        <tr class="table-light">
+                            <th>Difference</th>
+                            <td id="pvDiff" class="text-end fw-bold">—</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="alert alert-warning mt-3 mb-0">
+                    System stock is snapshotted when you save. Approval by
+                    Admin / Owner or Head Office Manager is required before the
+                    tank balance changes.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+    var pumpSel=document.getElementById("petrol_pump_id"),
+        tankSel=document.getElementById("tank_id"),
+        phys=document.getElementById("physical_stock_liters"),
+        pvP=document.getElementById("pvProduct"),
+        pvS=document.getElementById("pvSystem"),
+        pvF=document.getElementById("pvPhysical"),
+        pvD=document.getElementById("pvDiff");
+
+    function filterTanks(){
+        var pid=pumpSel.value;
+        Array.prototype.forEach.call(tankSel.options,function(o){
+            if(!o.value)return;
+            var show=!pid||o.dataset.pump===pid;
+            o.hidden=!show;
+            if(!show&&o.selected)tankSel.value="";
+        });
+        preview();
+    }
+    function preview(){
+        var o=tankSel.selectedOptions[0];
+        var hasTank=o&&o.value;
+        var sys=hasTank?parseFloat(o.dataset.stock):null;
+        var p=phys.value===""?null:parseFloat(phys.value);
+        pvP.textContent=hasTank?o.dataset.product:"—";
+        pvS.textContent=sys===null?"—":sys.toFixed(2)+" L";
+        pvF.textContent=p===null?"—":p.toFixed(2)+" L";
+        if(sys===null||p===null||isNaN(p)){pvD.textContent="—";pvD.className="text-end fw-bold";return;}
+        var d=p-sys;
+        pvD.textContent=(d>0?"+":"")+d.toFixed(2)+" L "+(d>0?"(GAIN)":(d<0?"(LOSS)":"(NO CHANGE)"));
+        pvD.className="text-end fw-bold "+(d>0?"text-success":(d<0?"text-danger":""));
+    }
+    pumpSel.addEventListener("change",filterTanks);
+    tankSel.addEventListener("change",preview);
+    phys.addEventListener("input",preview);
+    filterTanks();
+})();
+</script>
+{% endblock %}

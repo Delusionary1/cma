@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if mode == "edit" else "New" }} HO Salary Payment{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('head_office.index') }}">Head Office</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('head_office.ho_salary_list') }}">Salary Payments</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ "Edit" if mode == "edit" else "New" }}</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">{{ "Edit Salary Payment" if mode == "edit" else "New Salary / Advance Payment" }}</h1>
+
+<div class="alert alert-secondary">This payment comes out of the chosen account (cash in hand or bank) and is recorded as a Head Office expense. You cannot pay more than the account holds.</div>
+
+<div class="row"><div class="col-12 col-lg-8">
+<form method="post" class="row g-3">
+    <div class="col-md-8">
+        <label class="form-label" for="staff_id">Employee <span class="text-danger">*</span></label>
+        <select class="form-select" id="staff_id" name="staff_id" required>
+            <option value="" disabled {{ "selected" if not form.staff_id else "" }}>Select employee…</option>
+            {% for s in staff %}<option value="{{ s.id }}" {{ "selected" if form.staff_id == s.id else "" }}>{{ s.employee_name }}{% if s.designation %} ({{ s.designation }}){% endif %}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" for="payment_type">Type <span class="text-danger">*</span></label>
+        <select class="form-select" id="payment_type" name="payment_type" required>
+            {% for t in payment_types %}<option value="{{ t }}" {{ "selected" if form.payment_type == t else "" }}>{{ t }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" for="payment_date">Date <span class="text-danger">*</span></label>
+        <input type="date" class="form-control" id="payment_date" name="payment_date" value="{{ form.payment_date }}" required>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" for="amount">Amount (PKR) <span class="text-danger">*</span></label>
+        <input type="number" step="0.01" min="0" class="form-control" id="amount" name="amount" value="{{ form.amount }}" required>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" for="for_month">For Month</label>
+        <input type="text" class="form-control" id="for_month" name="for_month" value="{{ form.for_month }}" placeholder="e.g. June 2026" maxlength="40">
+    </div>
+    <div class="col-md-8">
+        <label class="form-label" for="paid_from_account_id">Paid From (account) <span class="text-danger">*</span></label>
+        <select class="form-select" id="paid_from_account_id" name="paid_from_account_id" required>
+            <option value="" disabled {{ "selected" if not form.paid_from_account_id else "" }}>-- Select account --</option>
+            {% for a in accounts %}<option value="{{ a.id }}" {{ "selected" if form.paid_from_account_id == a.id else "" }}>{{ a.name }} ({{ a.account_type }}) — bal {{ "%.0f"|format(a.current_balance or 0) }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-12">
+        <label class="form-label" for="notes">Notes</label>
+        <input type="text" class="form-control" id="notes" name="notes" value="{{ form.notes }}" maxlength="300">
+    </div>
+    <div class="col-12">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {{ "checked" if form.is_active else "" }}>
+            <label class="form-check-label" for="is_active">Active (reduces the account &amp; counts as expense)</label>
+        </div>
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">{{ "Save Changes" if mode == "edit" else "Pay" }}</button>
+        <a href="{{ url_for('head_office.ho_salary_list') }}" class="btn btn-link">Cancel</a>
+    </div>
+</form>
+</div></div>
+{% endblock %}

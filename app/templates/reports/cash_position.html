@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Cash &amp; Bank Position &middot; Reports{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('reports.index') }}">Reports</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Cash Position</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Cash &amp; Bank Position</h1>
+    <div>
+        <a href="{{ url_for('reports.cash_position', export='xlsx') }}" class="btn btn-success btn-sm">Export Excel</a>
+        <a href="{{ url_for('reports.cash_position', export='pdf') }}" class="btn btn-danger btn-sm">Export PDF</a>
+    </div>
+</div>
+
+{% if cash.accounts %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead><tr><th>Account</th><th>Type</th><th>Business Unit</th><th class="text-end">Current Balance</th></tr></thead>
+        <tbody>
+            {% for a in cash.accounts %}
+            <tr>
+                <td>{{ a.name }}</td>
+                <td>{{ a.account_type }}</td>
+                <td>{{ a.business_unit.name if a.business_unit else "Global" }}</td>
+                <td class="text-end {{ 'text-danger' if a.current_balance < 0 else '' }}">{{ "%.2f"|format(a.current_balance) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td colspan="3" class="text-end">Total</td>
+                <td class="text-end">{{ "%.2f"|format(cash.total) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No active cash/bank accounts.</div>
+{% endif %}
+
+<p class="text-muted small">
+    Balances reflect postings made so far (head office cash receipts increase,
+    head office expenses and vendor payments decrease). Pump-level cash is not
+    auto-posted yet.
+</p>
+
+<a href="{{ url_for('reports.index') }}" class="btn btn-link">&larr; Back to Reports</a>
+{% endblock %}

@@ -1,0 +1,179 @@
+{# Reusable daily-closing entry: calculated preview + "where did the cash go"
+   waterfall form. Used by the create/edit page AND embedded on the closings
+   list so today's closing can be entered without a separate "New Closing" click.
+   Expects: mode ('create'/'edit'), form, preview, deposit_methods,
+   method_accounts, and (edit only) closing. #}
+{% if preview %}
+<div class="card mb-4">
+    <div class="card-header">Calculated from existing entries</div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3"><div class="text-muted small">Fuel Sale Liters</div><div class="h5">{{ "%.2f"|format(preview.fuel_sale_liters) }}</div></div>
+            <div class="col-md-3"><div class="text-muted small">Fuel Sale Amount</div><div class="h5">{{ "%.2f"|format(preview.fuel_sale_amount) }}</div></div>
+            <div class="col-md-3"><div class="text-muted small">Lubricant Sale</div><div class="h5">{{ "%.2f"|format(preview.lubricant_sale_amount) }}</div></div>
+            <div class="col-md-3"><div class="text-muted small">Total Sale</div><div class="h5">{{ "%.2f"|format(preview.total_sale_amount) }}</div></div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-md-3"><div class="text-muted small">Expenses Paid</div><div class="h5">{{ "%.2f"|format(preview.expenses_paid) }}</div></div>
+            <div class="col-md-3"><div class="text-muted small">Expected Cash to Submit</div><div class="h5">{{ "%.2f"|format(preview.expected_cash_to_submit) }}</div></div>
+            <div class="col-md-3"><div class="text-muted small">Payment Methods Total</div><div class="h5">{{ "%.2f"|format(preview.payment_methods_total) }}</div></div>
+        </div>
+        {% if preview.payment_mismatch %}
+        <div class="alert alert-warning mt-3 mb-0">Warning: non-cash amounts exceed the total sale.</div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% if mode == "edit" or preview %}
+<form method="post" action="{% if mode == 'edit' %}{{ url_for('petrol_pumps.daily_closings_edit', closing_id=closing.id) }}{% else %}{{ url_for('petrol_pumps.daily_closings_create') }}{% endif %}">
+    {% if mode == "create" %}
+    <input type="hidden" name="petrol_pump_id" value="{{ form.petrol_pump_id }}">
+    <input type="hidden" name="closing_date" value="{{ form.closing_date }}">
+    {% else %}
+    <div class="row mb-3">
+        <div class="col-md-4"><label class="form-label">Petrol Pump</label><input class="form-control" value="{{ closing.petrol_pump.name }}" disabled></div>
+        <div class="col-md-3"><label class="form-label">Closing Date</label><input class="form-control" value="{{ closing.closing_date.strftime('%Y-%m-%d') }}" disabled></div>
+    </div>
+    {% endif %}
+
+    {# ---- Cash waterfall: where did the day's money go? ---- #}
+    <h2 class="h5 mb-2">Where did the cash go?</h2>
+    <div class="alert alert-secondary py-2">
+        Total sale, minus expenses, leaves the cash. Then enter each non-cash
+        amount and pick the account it went into — that amount leaves the pump's
+        cash and lands in that account (shown under Head Office's bank/wallet).
+        Whatever cash is left is what comes to Head Office.
+    </div>
+
+    <table class="table align-middle dc-flow" id="dcFlow"
+           data-total="{{ '%.2f'|format(preview.total_sale_amount) }}"
+           data-expenses="{{ '%.2f'|format(preview.expenses_paid) }}">
+        <tbody>
+            <tr class="table-light">
+                <th style="width:280px;">Total Sale Cash</th>
+                <td></td>
+                <td class="text-end fw-bold" style="width:180px;">{{ "%.2f"|format(preview.total_sale_amount) }}</td>
+            </tr>
+            <tr>
+                <th class="text-danger">− Expenses Paid</th>
+                <td class="text-muted small">Derived from the day's pump expenses</td>
+                <td class="text-end text-danger" style="width:180px;">{{ "%.2f"|format(preview.expenses_paid) }}</td>
+            </tr>
+            <tr class="table-light">
+                <th>Cash after expenses</th>
+                <td></td>
+                <td class="text-end fw-bold" id="dcAfterExp" style="width:180px;">0.00</td>
+            </tr>
+
+            {% for amount_attr, account_attr, field, label, types in deposit_methods %}
+            <tr>
+                <th class="text-danger">− {{ label }}</th>
+                <td>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">PKR</span>
+                        <input type="number" step="0.01" min="0" class="form-control dc-amt"
+                               name="{{ amount_attr }}" value="{{ form[amount_attr] }}"
+                               data-amt placeholder="0">
+                        <select class="form-select dc-acct" name="{{ field }}" style="max-width:230px;">
+                            <option value="">— select account —</option>
+                            {% for a in method_accounts[field] %}
+                            <option value="{{ a.id }}" {{ "selected" if form[field] == a.id else "" }}>{{ a.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% if not method_accounts[field] %}
+                    <div class="form-text text-warning">No matching account for this pump — add one in <a href="{{ url_for('master_data.accounts_create') }}">Master Data → Cash/Bank Accounts</a>.</div>
+                    {% endif %}
+                </td>
+                <td class="text-end text-danger dc-running" style="width:180px;">0.00</td>
+            </tr>
+            {% endfor %}
+
+            <tr>
+                <th class="text-danger">− PSO Card</th>
+                <td>
+                    <div class="input-group input-group-sm" style="max-width:200px;">
+                        <span class="input-group-text">PKR</span>
+                        <input type="number" step="0.01" min="0" class="form-control dc-amt"
+                               name="pso_card_amount" value="{{ form.pso_card_amount }}"
+                               data-amt placeholder="0">
+                    </div>
+                    <div class="form-text">Goes to the <strong>PSO vendor's card section</strong> — verify there to reduce the PSO payable.</div>
+                </td>
+                <td class="text-end text-danger dc-running" style="width:180px;">0.00</td>
+            </tr>
+
+            <tr>
+                <th class="text-danger">− Credit Sale</th>
+                <td>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">PKR</span>
+                        <input type="number" step="0.01" min="0" class="form-control dc-amt"
+                               name="credit_sale_amount" value="{{ form.credit_sale_amount }}"
+                               data-amt placeholder="0">
+                        <select class="form-select" name="credit_customer_id" style="max-width:230px;">
+                            <option value="">— customer (who took credit) —</option>
+                            {% for cu in credit_customers %}
+                            <option value="{{ cu.id }}" {{ "selected" if form.credit_customer_id == cu.id else "" }}>{{ cu.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% if credit_customers %}
+                    <div class="form-text">Receivable — goes to that customer's ledger to clear later.</div>
+                    {% else %}
+                    <div class="form-text text-warning">No customers for this pump yet — add one in <a href="{{ url_for('master_data.customers_create') }}">Master Data → Customers</a> (Business Unit = Petrol Pump Retail).</div>
+                    {% endif %}
+                </td>
+                <td class="text-end text-danger dc-running" style="width:180px;">0.00</td>
+            </tr>
+
+            <tr class="table-success">
+                <th>Cash in hand → to Head Office</th>
+                <td class="text-muted small">Auto-calculated. Head Office can collect this after the closing is saved.</td>
+                <td class="text-end fw-bold h5 mb-0" id="dcFinal" style="width:180px;">0.00</td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="alert alert-danger d-none" id="dcOver">Non-cash amounts exceed the total sale — please check the figures.</div>
+
+    <div class="mb-3"><label class="form-label">Remarks</label><textarea class="form-control" name="remarks" rows="2">{{ form.remarks }}</textarea></div>
+
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="manager_approved" name="manager_approved" {{ "checked" if form.manager_approved else "" }}>
+        <label class="form-check-label" for="manager_approved">Manager approved</label>
+    </div>
+
+    <button type="submit" class="btn btn-primary">{{ "Save Changes" if mode == "edit" else "Save Closing" }}</button>
+    {% if mode == "edit" %}<a href="{{ url_for('petrol_pumps.daily_closings_list') }}" class="btn btn-link">Cancel</a>{% endif %}
+</form>
+
+<script>
+(function(){
+"use strict";
+var flow=document.getElementById("dcFlow");
+if(!flow)return;
+var total=parseFloat(flow.dataset.total)||0,exp=parseFloat(flow.dataset.expenses)||0;
+var fmt=new Intl.NumberFormat("en",{minimumFractionDigits:2,maximumFractionDigits:2});
+var afterExpEl=document.getElementById("dcAfterExp"),finalEl=document.getElementById("dcFinal"),
+    overEl=document.getElementById("dcOver");
+function recalc(){
+    var afterExp=total-exp;
+    afterExpEl.textContent=fmt.format(afterExp);
+    var running=afterExp,noncash=0;
+    flow.querySelectorAll("tbody tr").forEach(function(tr){
+        var amtEl=tr.querySelector("[data-amt]");
+        if(!amtEl)return;
+        var v=parseFloat(amtEl.value)||0;
+        noncash+=v;running-=v;
+        var rc=tr.querySelector(".dc-running");
+        if(rc)rc.textContent=fmt.format(running);
+    });
+    finalEl.textContent=fmt.format(running);
+    overEl.classList.toggle("d-none",noncash<=total);
+}
+flow.addEventListener("input",function(e){if(e.target.matches("[data-amt]"))recalc();});
+recalc();
+})();
+</script>
+{% endif %}

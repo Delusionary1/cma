@@ -1,0 +1,22 @@
+{% extends "reports/dashboards/_base.html" %}
+{% import "reports/dashboards/_macros.html" as w %}
+
+{% block dash %}
+<div class="dgrid">
+    {{ w.kpi("Total Bulk Sale", d.summary.sale, "#F5A524") }}
+    {{ w.kpi("Purchase Cost", d.summary.purchase, "#A16207") }}
+    {{ w.kpi("Net Profit", d.summary.net, "#15803D") }}
+    {{ w.kpi("Outstanding Receivable", d.outstanding, "#BE123C") }}
+</div>
+
+<div class="dpanel-grid">
+    <div class="dpanel">
+        <h2>Pump-wise Bulk Sale</h2>
+        {{ w.bars(d.pumps, "name", "amount", "#0E7490") }}
+    </div>
+    <div class="dpanel">
+        <h2>Delivery Status</h2>
+        {{ w.chips(d.statuses, "name", "count") }}
+    </div>
+</div>
+{% endblock %}

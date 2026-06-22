@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "Edit" if mode == "edit" else "New" }} Daily Closing &middot; Petrol Pumps{% endblock %}
+
+{% block content %}
+{% from "petrol_pumps/_pump_lock.html" import pump_lock %}
+{% set sel_pump = (pumps|selectattr('id','equalto',form.petrol_pump_id)|first) if form.petrol_pump_id else None %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.daily_closings_list') }}">Daily Closings</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ "Edit" if mode == "edit" else "New" }}</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">{{ "Edit Daily Closing" if mode == "edit" else "New Daily Closing" }}</h1>
+
+{% if mode == "create" %}
+<div class="alert alert-secondary">
+    Pick a pump and date, then click <strong>Calculate</strong> to pull the
+    fuel sale, lubricant sale and expenses from existing entries. Then enter each
+    non-cash amount and the account it went into; the cash to Head Office is
+    worked out for you. Then Save.
+</div>
+<form method="get" class="row g-2 mb-4">
+    <div class="col-md-4">
+        {% if sel_pump %}{{ pump_lock(sel_pump) }}{% else %}
+        <select name="petrol_pump_id" class="form-select" required>
+            <option value="" disabled {{ "selected" if not form.petrol_pump_id else "" }}>-- Select a pump --</option>
+            {% for pump in pumps %}<option value="{{ pump.id }}" {{ "selected" if form.petrol_pump_id == pump.id else "" }}>{{ pump.name }}</option>{% endfor %}
+        </select>
+        {% endif %}
+    </div>
+    <div class="col-md-3"><input type="date" name="closing_date" value="{{ form.closing_date }}" class="form-control" required></div>
+    <div class="col-auto"><button type="submit" class="btn btn-outline-primary">Calculate</button></div>
+</form>
+{% endif %}
+
+{% include "petrol_pumps/daily_closings/_closing_entry.html" %}
+{% endblock %}

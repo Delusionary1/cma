@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Carriage Expense &middot; Carriage{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('carriage.index') }}">Carriage</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('carriage.expenses_list') }}">Expenses</a></li>
+        <li class="breadcrumb-item active" aria-current="page">#{{ expense.id }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Carriage Expense</h1>
+    <a href="{{ url_for('carriage.expenses_edit', expense_id=expense.id) }}" class="btn btn-outline-secondary btn-sm">Edit</a>
+</div>
+
+<table class="table w-auto">
+    <tr><th class="pe-4">Category</th><td>{{ expense.expense_category.name if expense.expense_category else "—" }}</td></tr>
+    <tr><th>Date</th><td>{{ expense.expense_date.strftime("%Y-%m-%d") }}</td></tr>
+    <tr><th>Amount</th><td class="fw-semibold">PKR {{ "%.2f"|format(expense.amount) }}</td></tr>
+    <tr><th>Paid From</th><td>{{ expense.paid_from_account.name if expense.paid_from_account else "—" }}</td></tr>
+    <tr><th>Notes</th><td>{{ expense.notes or "—" }}</td></tr>
+    <tr><th>Status</th><td>{% if expense.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td></tr>
+    <tr><th>Created by</th><td>{{ expense.created_by.full_name if expense.created_by else "—" }}</td></tr>
+</table>
+
+<a href="{{ url_for('carriage.expenses_list') }}" class="btn btn-link">&larr; Back</a>
+{% endblock %}

@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "Edit" if mode == "edit" else "New" }} Trip &middot; Carriage{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('carriage.index') }}">Carriage</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('carriage.trips_list') }}">Trips</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ "Edit" if mode == "edit" else "New" }}</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">{{ ("Edit Trip " ~ trip.trip_number) if mode == "edit" else "New Trip" }}</h1>
+
+<div class="alert alert-secondary">
+    Net profit is calculated automatically:
+    <code>net profit = total freight &minus; (rent + fuel + toll + loading/unloading + driver + maintenance + other)</code>.
+    The trip number is generated automatically.
+</div>
+
+<form method="post">
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <label for="trip_date" class="form-label">Trip Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="trip_date" name="trip_date" value="{{ form.trip_date }}" required>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="trip_type" class="form-label">Trip Type <span class="text-danger">*</span></label>
+            <select class="form-select" id="trip_type" name="trip_type" required>
+                <option value="" disabled {{ "selected" if not form.trip_type else "" }}>-- Select type --</option>
+                {% for t in trip_types %}<option value="{{ t }}" {{ "selected" if form.trip_type == t else "" }}>{{ t }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="business_reference" class="form-label">Business Reference</label>
+            <select class="form-select" id="business_reference" name="business_reference">
+                <option value="">-- None --</option>
+                {% for b in business_references %}<option value="{{ b }}" {{ "selected" if form.business_reference == b else "" }}>{{ b }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="trip_status" class="form-label">Trip Status <span class="text-danger">*</span></label>
+            <select class="form-select" id="trip_status" name="trip_status" required>
+                {% for s in trip_statuses %}<option value="{{ s }}" {{ "selected" if form.trip_status == s else "" }}>{{ s }}</option>{% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <h2 class="h6 text-muted">Vehicle &amp; Driver</h2>
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <label for="vehicle_ownership" class="form-label">Ownership <span class="text-danger">*</span></label>
+            <select class="form-select" id="vehicle_ownership" name="vehicle_ownership" required>
+                {% for o in ownerships %}<option value="{{ o }}" {{ "selected" if form.vehicle_ownership == o else "" }}>{{ o }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="vehicle_id" class="form-label">Vehicle (own/rented from master)</label>
+            <select class="form-select" id="vehicle_id" name="vehicle_id">
+                <option value="">-- None --</option>
+                {% for v in vehicles %}<option value="{{ v.id }}" {{ "selected" if form.vehicle_id == v.id else "" }}>{{ v.vehicle_number }} ({{ v.ownership_type }})</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="vehicle_number" class="form-label">Vehicle Number (reference)</label>
+            <input type="text" class="form-control" id="vehicle_number" name="vehicle_number" value="{{ form.vehicle_number }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="rented_vehicle_vendor_id" class="form-label">Rented Vehicle Provider</label>
+            <select class="form-select" id="rented_vehicle_vendor_id" name="rented_vehicle_vendor_id">
+                <option value="">-- None --</option>
+                {% for v in vendors %}<option value="{{ v.id }}" {{ "selected" if form.rented_vehicle_vendor_id == v.id else "" }}>{{ v.name }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="driver_id" class="form-label">Driver (master)</label>
+            <select class="form-select" id="driver_id" name="driver_id">
+                <option value="">-- None --</option>
+                {% for d in drivers %}<option value="{{ d.id }}" {{ "selected" if form.driver_id == d.id else "" }}>{{ d.name }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="driver_name" class="form-label">Driver Name (reference)</label>
+            <input type="text" class="form-control" id="driver_name" name="driver_name" value="{{ form.driver_name }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="driver_contact" class="form-label">Driver Contact</label>
+            <input type="text" class="form-control" id="driver_contact" name="driver_contact" value="{{ form.driver_contact }}">
+        </div>
+    </div>
+
+    <h2 class="h6 text-muted">Load &amp; Route</h2>
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <label for="product_id" class="form-label">Product</label>
+            <select class="form-select" id="product_id" name="product_id">
+                <option value="">-- None --</option>
+                {% for p in products %}<option value="{{ p.id }}" {{ "selected" if form.product_id == p.id else "" }}>{{ p.name }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="quantity_loaded" class="form-label">Quantity Loaded</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="quantity_loaded" name="quantity_loaded" value="{{ form.quantity_loaded }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="quantity_delivered" class="form-label">Quantity Delivered</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="quantity_delivered" name="quantity_delivered" value="{{ form.quantity_delivered }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="party_name" class="form-label">Customer / Pump / Godown</label>
+            <input type="text" class="form-control" id="party_name" name="party_name" value="{{ form.party_name }}">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="loading_point" class="form-label">Loading Point</label>
+            <input type="text" class="form-control" id="loading_point" name="loading_point" value="{{ form.loading_point }}">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="unloading_point" class="form-label">Unloading Point</label>
+            <input type="text" class="form-control" id="unloading_point" name="unloading_point" value="{{ form.unloading_point }}">
+        </div>
+    </div>
+
+    <h2 class="h6 text-muted">Freight &amp; Expenses</h2>
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <label for="freight_rate" class="form-label">Freight Rate</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="freight_rate" name="freight_rate" value="{{ form.freight_rate }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="total_freight_amount" class="form-label">Total Freight Amount</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="total_freight_amount" name="total_freight_amount" value="{{ form.total_freight_amount }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="freight_paid_by" class="form-label">Freight Paid By</label>
+            <select class="form-select" id="freight_paid_by" name="freight_paid_by">
+                <option value="">-- None --</option>
+                {% for o in freight_paid_by_options %}<option value="{{ o }}" {{ "selected" if form.freight_paid_by == o else "" }}>{{ o }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="rent_amount" class="form-label">Rent (rented vehicle)</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="rent_amount" name="rent_amount" value="{{ form.rent_amount }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="paid_from_account_id" class="form-label">Expenses Paid From</label>
+            <select class="form-select" id="paid_from_account_id" name="paid_from_account_id">
+                <option value="">-- None --</option>
+                {% for a in accounts %}<option value="{{ a.id }}" {{ "selected" if form.paid_from_account_id == a.id else "" }}>{{ a.name }}</option>{% endfor %}
+            </select>
+            <div class="form-text">Cash/bank account that own-vehicle trip expenses are paid from (enables ledger posting).</div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="fuel_expense" class="form-label">Fuel Expense</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="fuel_expense" name="fuel_expense" value="{{ form.fuel_expense }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="toll_tax" class="form-label">Toll Tax</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="toll_tax" name="toll_tax" value="{{ form.toll_tax }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="loading_unloading_expense" class="form-label">Loading/Unloading</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="loading_unloading_expense" name="loading_unloading_expense" value="{{ form.loading_unloading_expense }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="driver_expense" class="form-label">Driver Expense</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="driver_expense" name="driver_expense" value="{{ form.driver_expense }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="maintenance_expense" class="form-label">Maintenance</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="maintenance_expense" name="maintenance_expense" value="{{ form.maintenance_expense }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="other_expense" class="form-label">Other Expense</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="other_expense" name="other_expense" value="{{ form.other_expense }}">
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="notes" class="form-label">Notes</label>
+        <textarea class="form-control" id="notes" name="notes" rows="2">{{ form.notes }}</textarea>
+    </div>
+
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {{ "checked" if form.is_active else "" }}>
+        <label class="form-check-label" for="is_active">Active</label>
+    </div>
+
+    <button type="submit" class="btn btn-primary">{{ "Save Changes" if mode == "edit" else "Create" }}</button>
+    {% if mode == "edit" %}<a href="{{ url_for('carriage.trips_view', trip_id=trip.id) }}" class="btn btn-link">Cancel</a>
+    {% else %}<a href="{{ url_for('carriage.trips_list') }}" class="btn btn-link">Cancel</a>{% endif %}
+</form>
+{% endblock %}

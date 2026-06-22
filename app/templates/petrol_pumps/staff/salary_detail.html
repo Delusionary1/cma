@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Salary Payment #{{ payment.id }} · Pump Staff{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.salary_payments_list') }}">Salary Payments</a></li>
+        <li class="breadcrumb-item active" aria-current="page">#{{ payment.id }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">{{ payment.payment_type }} Payment #{{ payment.id }}</h1>
+    <div>
+        <a href="{{ url_for('petrol_pumps.salary_payments_edit', payment_id=payment.id) }}" class="btn btn-outline-secondary">Edit</a>
+        <form method="post" action="{{ url_for('petrol_pumps.salary_payments_toggle_status', payment_id=payment.id) }}" class="d-inline">
+            {% if payment.is_active %}
+            <button type="submit" class="btn btn-outline-warning">Cancel</button>
+            {% else %}
+            <button type="submit" class="btn btn-outline-success">Reactivate</button>
+            {% endif %}
+        </form>
+        <form method="post" action="{{ url_for('petrol_pumps.salary_payments_delete', payment_id=payment.id) }}" class="d-inline"
+              onsubmit="return confirm('Permanently delete this payment? Any balance effect is reversed.');">
+            <button type="submit" class="btn btn-outline-danger">Delete</button>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-4">
+        <div class="card text-bg-light"><div class="card-body">
+            <div class="text-muted small">Amount</div>
+            <div class="h4 mb-0">{{ "%.2f"|format(payment.amount) }} PKR</div>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-bg-light"><div class="card-body">
+            <div class="text-muted small">Type</div>
+            <div class="h5 mb-0">
+                {% if payment.payment_type == 'Advance' %}<span class="badge bg-warning text-dark">Advance</span>
+                {% else %}<span class="badge bg-info">Salary</span>{% endif %}
+            </div>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-bg-light"><div class="card-body">
+            <div class="text-muted small">Posted to Account</div>
+            <div class="h6 mb-0">{{ "Yes" if payment.is_posted else "No" }}</div>
+        </div></div>
+    </div>
+</div>
+
+<table class="table" style="max-width:640px">
+    <tbody>
+        <tr>
+            <th style="width:200px;">Status</th>
+            <td>
+                {% if payment.is_active %}<span class="badge bg-success">Active</span>
+                {% else %}<span class="badge bg-secondary">Cancelled</span>{% endif %}
+            </td>
+        </tr>
+        <tr><th>Employee</th><td><a href="{{ url_for('petrol_pumps.staff_view', staff_id=payment.staff_id) }}">{{ payment.staff.employee_name }}</a></td></tr>
+        <tr><th>Pump</th><td>{{ payment.petrol_pump.name }}</td></tr>
+        <tr><th>Payment Date</th><td>{{ payment.payment_date.strftime("%Y-%m-%d") }}</td></tr>
+        <tr><th>For Month</th><td>{{ payment.for_month or "—" }}</td></tr>
+        <tr><th>Paid From</th><td>{{ payment.paid_from_account.name if payment.paid_from_account else "— (not posted)" }}</td></tr>
+        <tr><th>Notes</th><td>{{ payment.notes or "—" }}</td></tr>
+        <tr><th>Recorded By</th><td>{{ payment.created_by.full_name if payment.created_by else "—" }}</td></tr>
+        <tr><th>Created</th><td>{{ payment.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+    </tbody>
+</table>
+
+<a href="{{ url_for('petrol_pumps.salary_payments_list') }}" class="btn btn-link">&larr; Back to Salary Payments</a>
+{% endblock %}

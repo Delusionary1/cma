@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Checklist · {{ checklist.checklist_date }} · Petrol Pumps{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.checklists_list') }}">Daily Checklists</a></li>
+        <li class="breadcrumb-item active" aria-current="page">#{{ checklist.id }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">{{ checklist.petrol_pump.name }} — {{ checklist.checklist_date.strftime("%Y-%m-%d") }}</h1>
+    <div>
+        <a href="{{ url_for('petrol_pumps.checklists_edit', checklist_id=checklist.id) }}" class="btn btn-outline-secondary">Edit</a>
+        <form method="post" action="{{ url_for('petrol_pumps.checklists_delete', checklist_id=checklist.id) }}" class="d-inline"
+              onsubmit="return confirm('Delete this checklist?');">
+            <button type="submit" class="btn btn-outline-danger">Delete</button>
+        </form>
+    </div>
+</div>
+
+{% if checklist.issue_count %}
+<div class="alert alert-danger">{{ checklist.issue_count }} item(s) flagged as <strong>Issue</strong> — follow up via Maintenance.</div>
+{% else %}
+<div class="alert alert-success">All items OK — no issues flagged.</div>
+{% endif %}
+
+<table class="table" style="max-width:720px">
+    <thead><tr><th>Check Item</th><th>Status</th><th>Note</th></tr></thead>
+    <tbody>
+        {% for item in checklist.items %}
+        <tr>
+            <td class="fw-semibold">{{ item.item_name }}</td>
+            <td>
+                {% if item.status == 'OK' %}<span class="badge bg-success">OK</span>
+                {% elif item.status == 'Issue' %}<span class="badge bg-danger">Issue</span>
+                {% else %}<span class="badge bg-secondary">N/A</span>{% endif %}
+            </td>
+            <td>{{ item.note or "—" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<table class="table" style="max-width:720px">
+    <tbody>
+        <tr><th style="width:200px">Overall Remarks</th><td>{{ checklist.remarks or "—" }}</td></tr>
+        <tr><th>Checked By</th><td>{{ checklist.checked_by.full_name if checklist.checked_by else "—" }}</td></tr>
+        <tr><th>Created</th><td>{{ checklist.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+    </tbody>
+</table>
+
+<a href="{{ url_for('petrol_pumps.checklists_list') }}" class="btn btn-link">&larr; Back to Checklists</a>
+{% endblock %}

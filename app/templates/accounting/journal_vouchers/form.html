@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}New Journal Voucher &middot; Accounting{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('accounting.index') }}">Accounting</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('accounting.journal_vouchers_list') }}">Journal Vouchers</a></li>
+        <li class="breadcrumb-item active" aria-current="page">New</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">New Journal Voucher</h1>
+
+{% if not accounts %}
+<div class="alert alert-warning">
+    There are no active chart accounts. Please create some before entering a
+    journal voucher.
+</div>
+{% endif %}
+
+<form method="post">
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label for="business_unit_id" class="form-label">
+                Business Unit <span class="text-danger">*</span>
+            </label>
+            <select class="form-select" id="business_unit_id" name="business_unit_id" required>
+                <option value="" disabled
+                    {{ "selected" if not form.business_unit_id else "" }}>
+                    -- Select a business unit --
+                </option>
+                {% for unit in business_units %}
+                <option value="{{ unit.id }}"
+                    {{ "selected" if form.business_unit_id == unit.id else "" }}>
+                    {{ unit.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="date" class="form-label">Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="date" name="date"
+                   value="{{ form.date }}" required>
+        </div>
+        <div class="col-md-5 mb-3">
+            <label for="reference_number" class="form-label">Reference Number</label>
+            <input type="text" class="form-control" id="reference_number"
+                   name="reference_number" value="{{ form.reference_number }}">
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="description" class="form-label">Description</label>
+        <input type="text" class="form-control" id="description"
+               name="description" value="{{ form.description }}">
+    </div>
+
+    <h2 class="h5 mb-2">Lines</h2>
+    <p class="text-muted small">
+        Enter at least 2 lines. Each line must have either a debit OR a credit
+        (not both). Total debit must equal total credit.
+    </p>
+
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+            <thead>
+                <tr>
+                    <th style="width: 35%;">Account</th>
+                    <th style="width: 18%;">Debit</th>
+                    <th style="width: 18%;">Credit</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td>
+                        <select class="form-select" name="account_id">
+                            <option value="">-- Select account --</option>
+                            {% for account in accounts %}
+                            <option value="{{ account.id }}"
+                                {{ "selected" if row.account_id == account.id|string else "" }}>
+                                {{ account.code }} - {{ account.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" min="0" class="form-control"
+                               name="debit" value="{{ row.debit }}">
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" min="0" class="form-control"
+                               name="credit" value="{{ row.credit }}">
+                    </td>
+                    <td>
+                        <input type="text" class="form-control"
+                               name="line_description" value="{{ row.description }}">
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create Voucher</button>
+    <a href="{{ url_for('accounting.journal_vouchers_list') }}"
+       class="btn btn-link">Cancel</a>
+</form>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Lubricant Sales &middot; Petrol Pumps{% endblock %}
+
+{% block content %}
+{% from "petrol_pumps/_pump_lock.html" import pump_lock %}
+{% set sel_pump = (pumps|selectattr('id','equalto',filters.petrol_pump_id)|first) if filters.petrol_pump_id else None %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Lubricant Sales</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Lubricant Sales{% if pump %} — {{ pump.name }}{% endif %}</h1>
+    <a href="{{ url_for('petrol_pumps.lubricant_sales_create', petrol_pump_id=filters.petrol_pump_id) }}" class="btn btn-primary">+ New Sale</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-2"><input type="date" name="date" value="{{ filters.date }}" class="form-control"></div>
+    <div class="col-md-2">
+        <select name="product_id" class="form-select">
+            <option value="">All products</option>
+            {% for p in products %}<option value="{{ p.id }}" {{ "selected" if filters.product_id == p.id else "" }}>{{ p.name }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="payment_method" class="form-select">
+            <option value="">All methods</option>
+            {% for m in payment_methods %}<option value="{{ m }}" {{ "selected" if filters.payment_method == m else "" }}>{{ m }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="customer_id" class="form-select">
+            <option value="">All customers</option>
+            {% for cu in customers %}<option value="{{ cu.id }}" {{ "selected" if filters.customer_id == cu.id else "" }}>{{ cu.name }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-outline-secondary">Filter</button>
+        <a href="{{ url_for('petrol_pumps.lubricant_sales_list', petrol_pump_id=filters.petrol_pump_id) }}" class="btn btn-link">Clear</a>
+    </div>
+</form>
+
+{# Lubricant stock = Head Office purchases − sales, per product, for this pump #}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Lubricant Stock{% if pump %} — {{ pump.name }}{% endif %}</strong>
+        <span class="text-muted small">Purchased by Head Office − sold = available</span>
+    </div>
+    <div class="card-body p-0">
+        {% if stock_rows %}
+        <table class="table table-sm mb-0 align-middle">
+            <thead><tr><th>Product</th><th class="text-end">Purchased</th><th class="text-end">Sold</th><th class="text-end">Available</th></tr></thead>
+            <tbody>
+            {% for r in stock_rows %}
+            <tr>
+                <td>{{ r.product.name }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.purchased) }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.sold) }}</td>
+                <td class="text-end fw-bold {{ 'text-danger' if r.available <= 0 else 'text-success' }}">{{ "%.2f"|format(r.available) }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="p-3 text-muted">No lubricant purchases yet for this pump. Head Office purchases show here as stock. <a href="{{ url_for('petrol_pumps.purchases_console') }}">Record a purchase</a>.</div>
+        {% endif %}
+    </div>
+</div>
+
+{% if sales %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead><tr><th>Date</th><th>Pump</th><th>Product</th><th class="text-end">Qty</th><th class="text-end">Rate</th><th class="text-end">Total</th><th>Payment</th><th>Customer</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+        <tbody>
+            {% for s in sales %}
+            <tr>
+                <td>{{ s.sale_date.strftime("%Y-%m-%d") }}</td>
+                <td>{{ s.petrol_pump.name }}</td>
+                <td>{{ s.product.name }}</td>
+                <td class="text-end">{{ "%.2f"|format(s.quantity) }}</td>
+                <td class="text-end">{{ "%.2f"|format(s.rate) }}</td>
+                <td class="text-end fw-semibold">{{ "%.2f"|format(s.total_amount) }}</td>
+                <td>{{ s.payment_method }}</td>
+                <td>{{ s.customer.name if s.customer else "—" }}</td>
+                <td>{% if s.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ url_for('petrol_pumps.lubricant_sales_view', sale_id=s.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                    <a href="{{ url_for('petrol_pumps.lubricant_sales_edit', sale_id=s.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="post" action="{{ url_for('petrol_pumps.lubricant_sales_toggle_status', sale_id=s.id) }}" class="d-inline">
+                        {% if s.is_active %}<button class="btn btn-sm btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-sm btn-outline-success">Activate</button>{% endif %}
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No lubricant sales found.</div>
+{% endif %}
+
+<p class="text-muted small">Lubricant stock movement will be handled later in the stock module.</p>
+<a href="{{ url_for('petrol_pumps.index') }}" class="btn btn-link">&larr; Back to Petrol Pumps</a>
+{% endblock %}

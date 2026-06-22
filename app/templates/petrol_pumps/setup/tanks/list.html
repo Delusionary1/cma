@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Tanks &middot; Pump Setup{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.setup') }}">Setup</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Tanks</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Tanks</h1>
+    <a href="{{ url_for('petrol_pumps.tanks_create') }}" class="btn btn-primary">+ New Tank</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto flex-grow-1">
+        <input type="text" name="q" value="{{ q }}" class="form-control"
+               placeholder="Search by pump, tank name or product...">
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Search</button>
+        {% if q %}<a href="{{ url_for('petrol_pumps.tanks_list') }}" class="btn btn-link">Clear</a>{% endif %}
+    </div>
+</form>
+
+{% if tanks %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Pump</th><th>Tank Name</th><th>Product</th>
+                <th class="text-end">Capacity</th><th class="text-end">Opening</th>
+                <th class="text-end">Current</th><th>Status</th><th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tank in tanks %}
+            <tr>
+                <td>{{ tank.petrol_pump.name }}</td>
+                <td>{{ tank.tank_name }}</td>
+                <td>{{ tank.product.name }}</td>
+                <td class="text-end">{{ "%.2f"|format(tank.capacity_liters) if tank.capacity_liters is not none else "—" }}</td>
+                <td class="text-end">{{ "%.2f"|format(tank.opening_stock_liters) }}</td>
+                <td class="text-end">{{ "%.2f"|format(tank.current_stock_liters) }}</td>
+                <td>
+                    {% if tank.is_active %}<span class="badge bg-success">Active</span>
+                    {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ url_for('petrol_pumps.tanks_view', tank_id=tank.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                    <a href="{{ url_for('petrol_pumps.tanks_edit', tank_id=tank.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="post" action="{{ url_for('petrol_pumps.tanks_toggle_status', tank_id=tank.id) }}" class="d-inline">
+                        {% if tank.is_active %}
+                        <button type="submit" class="btn btn-sm btn-outline-warning">Deactivate</button>
+                        {% else %}
+                        <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
+                        {% endif %}
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No tanks found{% if q %} for "{{ q }}"{% endif %}.</div>
+{% endif %}
+
+<a href="{{ url_for('petrol_pumps.setup') }}" class="btn btn-link">&larr; Back to Setup</a>
+{% endblock %}

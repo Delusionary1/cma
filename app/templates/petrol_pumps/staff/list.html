@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Pump Staff · Petrol Pumps{% endblock %}
+
+{% block content %}
+{% from "petrol_pumps/_pump_lock.html" import pump_lock %}
+{% set sel_pump = pump %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Staff</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Pump Staff{% if pump %} — {{ pump.name }}{% endif %}</h1>
+    <div>
+        <a href="{{ url_for('petrol_pumps.attendance_mark') }}" class="btn btn-outline-secondary btn-sm">Attendance</a>
+        <a href="{{ url_for('petrol_pumps.salary_payments_list') }}" class="btn btn-outline-secondary btn-sm">Salary Payments</a>
+        <a href="{{ url_for('petrol_pumps.salary_report') }}" class="btn btn-outline-secondary btn-sm">Salary Report</a>
+        <a href="{{ url_for('petrol_pumps.staff_list', export='xlsx', **filters) }}" class="btn btn-success btn-sm">Export Excel</a>
+        <a href="{{ url_for('petrol_pumps.staff_list', export='pdf', **filters) }}" class="btn btn-danger btn-sm">Export PDF</a>
+        <a href="{{ url_for('petrol_pumps.staff_create', petrol_pump_id=filters.petrol_pump_id) }}" class="btn btn-primary">+ New Employee</a>
+    </div>
+</div>
+<p class="text-muted">Employees per pump (BRD §6.9): manager, cashier, fillers, sweeper, gunman and others.</p>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-4 flex-grow-1">
+        <input type="text" name="q" value="{{ filters.q }}" class="form-control" placeholder="Search by name, CNIC or phone…">
+    </div>
+    <div class="col-md-2">
+        <select name="designation" class="form-select">
+            <option value="">All designations</option>
+            {% for d in designations %}
+            <option value="{{ d }}" {{ "selected" if filters.designation == d else "" }}>{{ d }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Filter</button>
+        <a href="{{ url_for('petrol_pumps.staff_list', petrol_pump_id=filters.petrol_pump_id) }}" class="btn btn-link">Clear</a>
+    </div>
+</form>
+
+{% if staff %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Employee</th><th>Duty Station</th><th>Designation</th>
+                <th>Shift</th><th>Phone</th>
+                <th class="text-end">Monthly Salary</th>
+                <th>Status</th><th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in staff %}
+            <tr>
+                <td>{{ s.employee_name }}</td>
+                <td>{{ s.petrol_pump.name }}</td>
+                <td><span class="badge bg-primary">{{ s.designation }}</span></td>
+                <td>{{ s.shift or "—" }}</td>
+                <td>{{ s.phone_number or "—" }}</td>
+                <td class="text-end">{{ "%.2f"|format(s.monthly_salary) }}</td>
+                <td>
+                    {% if s.is_active %}<span class="badge bg-success">Active</span>
+                    {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ url_for('petrol_pumps.staff_view', staff_id=s.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                    <a href="{{ url_for('petrol_pumps.staff_edit', staff_id=s.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="post" action="{{ url_for('petrol_pumps.staff_toggle_status', staff_id=s.id) }}" class="d-inline">
+                        {% if s.is_active %}
+                        <button type="submit" class="btn btn-sm btn-outline-warning">Deactivate</button>
+                        {% else %}
+                        <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
+                        {% endif %}
+                    </form>
+                    <form method="post" action="{{ url_for('petrol_pumps.staff_delete', staff_id=s.id) }}" class="d-inline"
+                          onsubmit="return confirm('Permanently delete employee \'{{ s.employee_name|e }}\'? This cannot be undone.');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No staff found. Use <strong>+ New Employee</strong> to add one.</div>
+{% endif %}
+
+<a href="{{ url_for('petrol_pumps.index') }}" class="btn btn-link">&larr; Back to Petrol Pumps</a>
+{% endblock %}

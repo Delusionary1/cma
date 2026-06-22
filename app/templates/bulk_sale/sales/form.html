@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "Edit" if mode == "edit" else "New" }} Bulk Sale{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('bulk_sale.index') }}">Bulk Sale</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('bulk_sale.sales_list') }}">Bulk Sales</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ "Edit" if mode == "edit" else "New" }}</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">{{ "Edit Bulk Sale" if mode == "edit" else "New Bulk Sale" }}</h1>
+
+<div class="alert alert-secondary">
+    Totals and profit are calculated automatically:
+    <code>purchase = qty &times; purchase rate</code>,
+    <code>sale = qty &times; sale rate</code>,
+    <code>net profit = sale &minus; purchase &minus; carriage &minus; other</code>.
+    Bulk sale does not affect pump tank stock or retail sale.
+</div>
+
+<form method="post">
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <label for="petrol_pump_id" class="form-label">Pump Name <span class="text-danger">*</span></label>
+            <select class="form-select" id="petrol_pump_id" name="petrol_pump_id" required>
+                <option value="" disabled {{ "selected" if not form.petrol_pump_id else "" }}>-- Select pump --</option>
+                {% for pump in pumps %}<option value="{{ pump.id }}" {{ "selected" if form.petrol_pump_id == pump.id else "" }}>{{ pump.name }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="customer_id" class="form-label">Customer <span class="text-danger">*</span></label>
+            <select class="form-select" id="customer_id" name="customer_id" required>
+                <option value="" disabled {{ "selected" if not form.customer_id else "" }}>-- Select customer --</option>
+                {% for cu in customers %}<option value="{{ cu.id }}" {{ "selected" if form.customer_id == cu.id else "" }}>{{ cu.name }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="vendor_id" class="form-label">Vendor (PSO) <span class="text-danger">*</span></label>
+            <select class="form-select" id="vendor_id" name="vendor_id" required>
+                <option value="" disabled {{ "selected" if not form.vendor_id else "" }}>-- Select vendor --</option>
+                {% for v in vendors %}<option value="{{ v.id }}" {{ "selected" if form.vendor_id == v.id else "" }}>{{ v.name }} ({{ v.vendor_type.value }})</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="product_id" class="form-label">Product (fuel) <span class="text-danger">*</span></label>
+            <select class="form-select" id="product_id" name="product_id" required>
+                <option value="" disabled {{ "selected" if not form.product_id else "" }}>-- Select fuel --</option>
+                {% for p in products %}<option value="{{ p.id }}" {{ "selected" if form.product_id == p.id else "" }}>{{ p.name }}</option>{% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <label for="sale_date" class="form-label">Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="sale_date" name="sale_date" value="{{ form.sale_date }}" required>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="quantity_liters" class="form-label">Quantity (liters) <span class="text-danger">*</span></label>
+            <input type="number" step="0.01" min="0" class="form-control" id="quantity_liters" name="quantity_liters" value="{{ form.quantity_liters }}" required>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="purchase_rate" class="form-label">Purchase Rate</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="purchase_rate" name="purchase_rate" value="{{ form.purchase_rate }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="sale_rate" class="form-label">Sale Rate</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="sale_rate" name="sale_rate" value="{{ form.sale_rate }}">
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <label for="pso_invoice_number" class="form-label">PSO Invoice Number</label>
+            <input type="text" class="form-control" id="pso_invoice_number" name="pso_invoice_number" value="{{ form.pso_invoice_number }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="carriage_charges" class="form-label">Carriage Charges</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="carriage_charges" name="carriage_charges" value="{{ form.carriage_charges }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="carriage_paid_by" class="form-label">Carriage Paid By</label>
+            <select class="form-select" id="carriage_paid_by" name="carriage_paid_by">
+                {% for o in carriage_paid_by_options %}<option value="{{ o }}" {{ "selected" if form.carriage_paid_by == o else "" }}>{{ o }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="other_expense" class="form-label">Other Expense</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="other_expense" name="other_expense" value="{{ form.other_expense }}">
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <label for="delivery_method" class="form-label">Delivery Method</label>
+            <select class="form-select" id="delivery_method" name="delivery_method">
+                {% for m in delivery_methods %}<option value="{{ m }}" {{ "selected" if form.delivery_method == m else "" }}>{{ m }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="vehicle_number" class="form-label">Vehicle / Tanker Number</label>
+            <input type="text" class="form-control" id="vehicle_number" name="vehicle_number" value="{{ form.vehicle_number }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="driver_name" class="form-label">Driver Name</label>
+            <input type="text" class="form-control" id="driver_name" name="driver_name" value="{{ form.driver_name }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="delivery_location" class="form-label">Delivery Location</label>
+            <input type="text" class="form-control" id="delivery_location" name="delivery_location" value="{{ form.delivery_location }}">
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <label for="payment_method" class="form-label">Payment Method</label>
+            <select class="form-select" id="payment_method" name="payment_method">
+                {% for m in payment_methods %}<option value="{{ m }}" {{ "selected" if form.payment_method == m else "" }}>{{ m }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="payment_status" class="form-label">Payment Status <span class="text-danger">*</span></label>
+            <select class="form-select" id="payment_status" name="payment_status" required>
+                {% for s in payment_statuses %}<option value="{{ s }}" {{ "selected" if form.payment_status == s else "" }}>{{ s }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="delivery_status" class="form-label">Delivery Status <span class="text-danger">*</span></label>
+            <select class="form-select" id="delivery_status" name="delivery_status" required>
+                {% for s in delivery_statuses %}<option value="{{ s }}" {{ "selected" if form.delivery_status == s else "" }}>{{ s }}</option>{% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="notes" class="form-label">Notes</label>
+        <textarea class="form-control" id="notes" name="notes" rows="2">{{ form.notes }}</textarea>
+    </div>
+
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {{ "checked" if form.is_active else "" }}>
+        <label class="form-check-label" for="is_active">Active</label>
+    </div>
+
+    <button type="submit" class="btn btn-primary">{{ "Save Changes" if mode == "edit" else "Create" }}</button>
+    {% if mode == "edit" %}<a href="{{ url_for('bulk_sale.sales_view', sale_id=sale.id) }}" class="btn btn-link">Cancel</a>
+    {% else %}<a href="{{ url_for('bulk_sale.sales_list') }}" class="btn btn-link">Cancel</a>{% endif %}
+</form>
+{% endblock %}

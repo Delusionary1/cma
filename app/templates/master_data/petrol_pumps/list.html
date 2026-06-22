@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Petrol Pumps &middot; Master Data{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Petrol Pumps</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Petrol Pumps</h1>
+    <a href="{{ url_for('master_data.petrol_pumps_create') }}"
+       class="btn btn-primary">+ New Petrol Pump</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto flex-grow-1">
+        <input type="text" name="q" value="{{ q }}" class="form-control"
+               placeholder="Search by name, location or manager...">
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Search</button>
+        {% if q %}
+        <a href="{{ url_for('master_data.petrol_pumps_list') }}"
+           class="btn btn-link">Clear</a>
+        {% endif %}
+    </div>
+</form>
+
+{% if pumps %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Location</th>
+                <th>Business Unit</th>
+                <th>PSO Acct</th>
+                <th>Cash Acct</th>
+                <th>Bank Acct</th>
+                <th>Manager</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pump in pumps %}
+            <tr>
+                <td>{{ pump.name }}</td>
+                <td>{{ pump.location or "—" }}</td>
+                <td>{{ pump.business_unit.name }}</td>
+                <td>{{ pump.pso_account_name or "—" }}</td>
+                <td>{{ pump.cash_account_name or "—" }}</td>
+                <td>{{ pump.bank_account_name or "—" }}</td>
+                <td>{{ pump.manager_name or "—" }}</td>
+                <td>
+                    {% if pump.is_active %}
+                    <span class="badge bg-success">Active</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ url_for('master_data.petrol_pumps_view', pump_id=pump.id) }}"
+                       class="btn btn-sm btn-outline-primary">View</a>
+                    <a href="{{ url_for('master_data.petrol_pumps_edit', pump_id=pump.id) }}"
+                       class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="post"
+                          action="{{ url_for('master_data.petrol_pumps_toggle_status', pump_id=pump.id) }}"
+                          class="d-inline">
+                        {% if pump.is_active %}
+                        <button type="submit" class="btn btn-sm btn-outline-warning">Deactivate</button>
+                        {% else %}
+                        <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
+                        {% endif %}
+                    </form>
+                    <form method="post"
+                          action="{{ url_for('master_data.petrol_pumps_delete', pump_id=pump.id) }}"
+                          class="d-inline"
+                          onsubmit="return confirm('Permanently delete pump \'{{ pump.name|e }}\' and its machines, nozzles &amp; tanks? This cannot be undone. (If it has transactions, deactivate instead.)');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+    No petrol pumps found{% if q %} for "{{ q }}"{% endif %}.
+</div>
+{% endif %}
+
+<a href="{{ url_for('master_data.index') }}" class="btn btn-link">&larr; Back to Master Data</a>
+{% endblock %}

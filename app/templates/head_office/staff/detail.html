@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ staff.employee_name }} · Head Office Staff{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('head_office.index') }}">Head Office</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('head_office.staff_list') }}">Staff</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ staff.employee_name }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{{ staff.employee_name }}</h1>
+    <div>
+        <a href="{{ url_for('head_office.ho_salary_create') }}" class="btn btn-primary">Pay Salary / Advance</a>
+        <a href="{{ url_for('head_office.staff_edit', staff_id=staff.id) }}" class="btn btn-outline-secondary">Edit</a>
+    </div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr><th style="width:220px;">Status</th><td>{% if staff.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td></tr>
+        <tr><th>Designation</th><td>{{ staff.designation or "—" }}</td></tr>
+        <tr><th>CNIC</th><td>{{ staff.cnic or "—" }}</td></tr>
+        <tr><th>Phone</th><td>{{ staff.phone_number or "—" }}</td></tr>
+        <tr><th>Monthly Salary</th><td>{{ "%.2f"|format(staff.monthly_salary) }} PKR</td></tr>
+        <tr><th>Joining Date</th><td>{{ staff.joining_date.strftime("%Y-%m-%d") if staff.joining_date else "—" }}</td></tr>
+        <tr><th>Notes</th><td>{{ staff.notes or "—" }}</td></tr>
+    </tbody>
+</table>
+
+<a href="{{ url_for('head_office.staff_list') }}" class="btn btn-link">&larr; Back to Staff</a>
+{% endblock %}

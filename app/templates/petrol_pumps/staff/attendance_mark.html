@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Mark Attendance · Pump Staff{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.staff_list') }}">Staff</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Attendance</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Mark Attendance</h1>
+    <a href="{{ url_for('petrol_pumps.attendance_report') }}" class="btn btn-outline-secondary btn-sm">Attendance Report</a>
+</div>
+<p class="text-muted">Choose a pump and date, then mark each employee. Saving again updates the same day.</p>
+
+<form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-md-4">
+        <label class="form-label">Petrol Pump</label>
+        <select name="petrol_pump_id" class="form-select" onchange="this.form.submit()">
+            <option value="">Select pump…</option>
+            {% for pump in pumps %}
+            <option value="{{ pump.id }}" {{ "selected" if filters.petrol_pump_id == pump.id else "" }}>{{ pump.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Date</label>
+        <input type="date" name="date" value="{{ filters.date }}" class="form-control" onchange="this.form.submit()">
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Load</button>
+    </div>
+</form>
+
+{% if not filters.petrol_pump_id %}
+<div class="alert alert-info">Select a petrol pump to load its staff.</div>
+{% elif not staff_rows %}
+<div class="alert alert-warning">No active staff at this pump. Add employees first.</div>
+{% else %}
+<form method="post" action="{{ url_for('petrol_pumps.attendance_mark') }}">
+    <input type="hidden" name="petrol_pump_id" value="{{ filters.petrol_pump_id }}">
+    <input type="hidden" name="attendance_date" value="{{ filters.date }}">
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr><th>Employee</th><th>Designation</th><th style="min-width:360px">Status</th></tr>
+            </thead>
+            <tbody>
+                {% for row in staff_rows %}
+                <tr>
+                    <td>{{ row.staff.employee_name }}</td>
+                    <td><span class="badge bg-primary">{{ row.staff.designation }}</span></td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            {% for s in statuses %}
+                            <input type="radio" class="btn-check" name="status_{{ row.staff.id }}"
+                                   id="st_{{ row.staff.id }}_{{ loop.index }}" value="{{ s }}"
+                                   {{ "checked" if row.status == s else "" }}>
+                            <label class="btn btn-sm
+                                {%- if s == 'Present' %} btn-outline-success
+                                {%- elif s == 'Absent' %} btn-outline-danger
+                                {%- elif s == 'Half Day' %} btn-outline-warning
+                                {%- else %} btn-outline-secondary{% endif %}"
+                                   for="st_{{ row.staff.id }}_{{ loop.index }}">{{ s }}</label>
+                            {% endfor %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <button type="submit" class="btn btn-primary">Save Attendance</button>
+</form>
+{% endif %}
+
+<a href="{{ url_for('petrol_pumps.staff_list') }}" class="btn btn-link mt-2">&larr; Back to Staff</a>
+{% endblock %}

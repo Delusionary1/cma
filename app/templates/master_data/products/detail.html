@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} &middot; Products{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.products_list') }}">Products</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ product.name }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{{ product.name }}</h1>
+    <div>
+        <a href="{{ url_for('master_data.products_edit', product_id=product.id) }}"
+           class="btn btn-outline-secondary">Edit</a>
+        <form method="post"
+              action="{{ url_for('master_data.products_toggle_status', product_id=product.id) }}"
+              class="d-inline">
+            {% if product.is_active %}
+            <button type="submit" class="btn btn-outline-warning">Deactivate</button>
+            {% else %}
+            <button type="submit" class="btn btn-outline-success">Activate</button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr>
+            <th style="width: 220px;">Status</th>
+            <td>
+                {% if product.is_active %}
+                <span class="badge bg-success">Active</span>
+                {% else %}
+                <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>Category</th>
+            <td>
+                <a href="{{ url_for('master_data.product_categories_view', category_id=product.category_id) }}">
+                    {{ product.category.name }}
+                </a>
+            </td>
+        </tr>
+        <tr><th>Unit</th><td>{{ product.unit }}</td></tr>
+        <tr>
+            <th>Default Purchase Rate</th>
+            <td>{{ "%.2f"|format(product.default_purchase_rate) if product.default_purchase_rate is not none else "—" }}</td>
+        </tr>
+        <tr>
+            <th>Default Sale Rate</th>
+            <td>{{ "%.2f"|format(product.default_sale_rate) if product.default_sale_rate is not none else "—" }}</td>
+        </tr>
+        <tr><th>Linked Stock Account</th><td>{{ product.linked_stock_account_name or "—" }}</td></tr>
+        <tr><th>Created</th><td>{{ product.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+        <tr><th>Updated</th><td>{{ product.updated_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+    </tbody>
+</table>
+
+<a href="{{ url_for('master_data.products_list') }}" class="btn btn-link">
+    &larr; Back to Products
+</a>
+{% endblock %}

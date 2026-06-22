@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "New" if mode == "create" else "Edit" }} Salary Payment · Pump Staff{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.salary_payments_list') }}">Salary Payments</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ "New" if mode == "create" else "Edit" }}</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">{{ "New Salary / Advance Payment" if mode == "create" else "Edit Salary Payment" }}</h1>
+
+<form method="post" class="card" style="max-width:720px">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label" for="staff_id">Employee *</label>
+                <select class="form-select" id="staff_id" name="staff_id" required>
+                    <option value="">Select employee…</option>
+                    {% for s in staff %}
+                    <option value="{{ s.id }}" {{ "selected" if form.staff_id == s.id else "" }}>
+                        {{ s.employee_name }} — {{ s.petrol_pump.name }} ({{ s.designation }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="payment_type">Type *</label>
+                <select class="form-select" id="payment_type" name="payment_type" required>
+                    {% for t in payment_types %}
+                    <option value="{{ t }}" {{ "selected" if form.payment_type == t else "" }}>{{ t }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="payment_date">Payment Date *</label>
+                <input type="date" class="form-control" id="payment_date" name="payment_date" value="{{ form.payment_date }}" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="amount">Amount (PKR) *</label>
+                <input type="number" step="0.01" min="0" class="form-control" id="amount" name="amount" value="{{ form.amount }}" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="for_month">For Month</label>
+                <input type="text" class="form-control" id="for_month" name="for_month" value="{{ form.for_month }}" placeholder="e.g. June 2026" maxlength="40">
+            </div>
+            <div class="col-12">
+                <div class="alert alert-secondary mb-0 py-2">This payment is deducted from <strong>{{ "the pump's" }}</strong> cash (just like a pump expense) — it reduces the pump's available cash for the day.</div>
+            </div>
+            <div class="col-12">
+                <label class="form-label" for="notes">Notes</label>
+                <input type="text" class="form-control" id="notes" name="notes" value="{{ form.notes }}" maxlength="300">
+            </div>
+            <div class="col-12">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {{ "checked" if form.is_active else "" }}>
+                    <label class="form-check-label" for="is_active">Active (counts against the pump's cash)</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body border-top d-flex gap-2">
+        <button type="submit" class="btn btn-primary">{{ "Record Payment" if mode == "create" else "Update Payment" }}</button>
+        <a href="{{ url_for('petrol_pumps.salary_payments_list') }}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</form>
+{% endblock %}

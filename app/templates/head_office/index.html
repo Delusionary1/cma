@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block title %}Head Office &middot; Oil &amp; Gas ERP{% endblock %}
+
+{% block content %}
+<style>
+/* ============ HEAD OFFICE COMMAND (scoped) ============ */
+.ho-wrap{position:relative;border-radius:22px;overflow:hidden;margin-bottom:22px;
+    background:linear-gradient(150deg,#0C1017,#121A26 55%,#16202E);
+    border:1px solid rgba(255,255,255,.08);padding:28px 30px;color:#E8EBF0}
+.ho-wrap::before{content:"";position:absolute;right:-150px;top:-170px;width:460px;height:460px;border-radius:50%;
+    background:radial-gradient(circle,rgba(245,165,36,.18),transparent 65%);pointer-events:none}
+.ho-wrap::after{content:"";position:absolute;left:-120px;bottom:-160px;width:380px;height:380px;border-radius:50%;
+    background:radial-gradient(circle,rgba(61,220,132,.12),transparent 65%);pointer-events:none}
+.ho-wrap>*{position:relative;z-index:1}
+.ho-eyebrow{font-family:var(--fm);font-size:10.5px;letter-spacing:.26em;color:#FFB84A;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.ho-eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:#F5A524;box-shadow:0 0 10px #F5A524}
+.ho-title{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.ho-title h1{font-family:var(--fl);color:#fff;font-size:30px;margin:0;letter-spacing:.01em}
+.ho-title h1 b{color:#FFC04D}
+.ho-title .net{text-align:right}
+.ho-title .net .l{font-family:var(--fm);font-size:9.5px;letter-spacing:.18em;color:#8FA0B5;text-transform:uppercase}
+.ho-title .net .v{font-family:var(--fd);font-weight:700;font-size:28px;color:#fff;line-height:1.05}
+.ho-title .net .v small{font-size:12px;color:#8FA0B5;font-weight:600;margin-right:4px}
+
+/* KPI strip */
+.ho-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:13px;margin-bottom:22px}
+.ho-kpi{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:15px;padding:16px 17px;
+    transition:transform .35s var(--ease),border-color .3s;position:relative;overflow:hidden}
+.ho-kpi:hover{transform:translateY(-3px);border-color:var(--kc,#F5A524)}
+.ho-kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--kc,#F5A524)}
+.ho-kpi .lab{font-family:var(--fm);font-size:9px;letter-spacing:.14em;color:#8FA0B5;text-transform:uppercase;display:flex;align-items:center;gap:7px}
+.ho-kpi .lab svg{width:14px;height:14px;color:var(--kc,#F5A524)}
+.ho-kpi .val{font-family:var(--fd);font-weight:700;font-size:21px;color:#fff;margin-top:9px;line-height:1.05}
+.ho-kpi .val small{font-size:10px;color:#8FA0B5;font-weight:600;margin-right:3px}
+.ho-kpi .sub{font-size:10.5px;color:#8FA0B5;margin-top:5px}
+.ho-kpi .val.neg{color:#FF8A8A}
+.ho-kpi.clik{cursor:pointer}
+.ho-kpi.clik:hover{box-shadow:0 14px 34px rgba(0,0,0,.4)}
+.ho-kpi .more{position:absolute;top:14px;right:14px;font-family:var(--fm);font-size:8.5px;letter-spacing:.1em;color:#8FA0B5;text-transform:uppercase;display:flex;align-items:center;gap:4px;opacity:.7;transition:opacity .25s}
+.ho-kpi.clik:hover .more{opacity:1;color:var(--kc,#F5A524)}
+.ho-kpi .more svg{width:11px;height:11px}
+
+/* account-breakdown modal */
+.hm-back{position:fixed;inset:0;z-index:1990;background:rgba(5,7,10,.74);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .3s}
+.hm-back.open{opacity:1;pointer-events:auto}
+.hm{position:fixed;z-index:2000;left:50%;top:50%;width:min(480px,calc(100vw - 28px));max-height:calc(100vh - 40px);overflow:auto;
+    transform:translate(-50%,-46%) scale(.96);opacity:0;pointer-events:none;
+    background:linear-gradient(160deg,#10151E,#151C28);border:1px solid rgba(255,255,255,.12);border-radius:22px;box-shadow:0 40px 90px rgba(0,0,0,.6);color:#E8EBF0;transition:transform .35s var(--ease),opacity .3s}
+.hm.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+.hm-h{display:flex;align-items:center;gap:13px;padding:22px 26px 0}
+.hm-h .ic{width:42px;height:42px;border-radius:12px;flex-shrink:0;display:grid;place-items:center;color:#04201F}
+.hm-h .ic svg{width:22px;height:22px}
+.hm-h h2{font-family:var(--fl);font-size:20px;color:#fff;margin:0}
+.hm-h small{display:block;font-family:var(--fm);font-size:9.5px;letter-spacing:.14em;color:#8FA0B5;text-transform:uppercase;margin-top:3px}
+.hm-x{margin-left:auto;background:none;border:none;color:#8C96A8;font-size:26px;line-height:1;cursor:pointer;padding:4px 8px}
+.hm-x:hover{color:#fff}
+.hm-body{padding:16px 26px 22px}
+.hm-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:13.5px}
+.hm-row:last-child{border-bottom:0}
+.hm-row .n{color:#E8EBF0;font-weight:500}
+.hm-row .a{font-family:var(--fm);font-weight:600;color:#fff}
+.hm-row .a.neg{color:#FF8A8A}
+.hm-tot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:2px solid rgba(255,255,255,.14);font-family:var(--fd);font-weight:700}
+.hm-tot .a{font-size:18px;color:#FFC857}
+.hm-none{color:#8C96A8;font-size:13px;padding:14px 0;text-align:center}
+.hm-manage{display:block;text-align:center;margin-top:14px;font-size:12px;font-weight:700;color:#7FB0FF;text-decoration:none}
+.hm-manage:hover{color:#A9CBFF}
+.hm-xfer{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.10)}
+.hm-xfer-h{font-family:var(--fm);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#7FBF9B;margin-bottom:10px}
+.hm-xfer-f{display:flex;flex-direction:column;gap:6px}
+.hm-xfer-f label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#9AA4B6;margin:4px 0 0}
+.hm-xfer-f select,.hm-xfer-f input{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:9px;color:#F4F6F9;padding:9px 11px;font-size:13.5px;outline:none;color-scheme:dark}
+.hm-xfer-f select:focus,.hm-xfer-f input:focus{border-color:rgba(61,220,132,.6);box-shadow:0 0 0 3px rgba(61,220,132,.14)}
+.hm-xfer-f button{margin-top:10px;border:0;border-radius:10px;padding:11px;cursor:pointer;font-weight:700;font-size:13px;color:#04201F;background:linear-gradient(92deg,#3DDC84,#1FB562)}
+.hm-xfer-f button:hover{filter:brightness(1.05)}
+
+/* allocation bar (where money sits) */
+.ho-alloc{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:15px;padding:16px 18px}
+.ho-alloc .h{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
+.ho-alloc .h .t{font-family:var(--fm);font-size:9.5px;letter-spacing:.16em;color:#8FA0B5;text-transform:uppercase}
+.ho-alloc .h .total{font-family:var(--fd);font-weight:700;color:#fff;font-size:15px}
+.ho-bar{height:14px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;display:flex}
+.ho-bar span{height:100%;transition:width 1s var(--ease) .2s}
+.ho-bar .s-cash{background:linear-gradient(90deg,#3DDC84,#2BC972)}
+.ho-bar .s-bank{background:linear-gradient(90deg,#5B8DEF,#3D6FE0)}
+.ho-bar .s-wallet{background:linear-gradient(90deg,#9B7FE8,#7E5FE0)}
+.ho-leg{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px}
+.ho-leg div{font-family:var(--fm);font-size:11px;color:#C3CBD8;display:flex;align-items:center;gap:7px}
+.ho-leg i{width:9px;height:9px;border-radius:3px}
+.ho-leg b{color:#fff;font-weight:600}
+
+/* section heading */
+.ho-sec{font-family:var(--fm);font-size:10.5px;letter-spacing:.22em;color:#5D6577;text-transform:uppercase;margin:28px 0 14px;display:flex;align-items:center;gap:12px}
+.ho-sec::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
+
+/* action module cards (light surface) */
+.ho-mods{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.ho-mod{position:relative;display:block;text-decoration:none;background:#fff;border:1px solid var(--border);border-radius:16px;padding:20px;overflow:hidden;
+    transition:transform .4s var(--ease),box-shadow .4s var(--ease),border-color .3s}
+.ho-mod::after{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--mc,#F5A524);opacity:0;transform:scaleX(.3);transform-origin:left;transition:opacity .35s,transform .5s var(--ease)}
+.ho-mod:hover{transform:translateY(-5px);box-shadow:var(--shadow-lg);border-color:var(--mc,#F5A524)}
+.ho-mod:hover::after{opacity:1;transform:none}
+.ho-mod .mic{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;background:var(--mbg,#FFF6E3);color:var(--mc,#E08900);margin-bottom:14px;transition:transform .45s var(--ease)}
+.ho-mod:hover .mic{transform:scale(1.12) rotate(-4deg)}
+.ho-mod .mic svg{width:21px;height:21px}
+.ho-mod h3{font-size:15px;margin:0 0 4px;color:var(--ink);font-family:var(--fd);font-weight:700}
+.ho-mod p{font-size:12px;color:var(--dim);margin:0 0 12px}
+.ho-mod .stat{display:flex;gap:14px;font-size:11.5px}
+.ho-mod .stat b{color:var(--ink)}.ho-mod .stat span{color:var(--faint)}
+.ho-mod .go{font-size:12px;font-weight:700;color:var(--mc,#E08900);display:inline-flex;align-items:center;gap:6px;margin-top:12px}
+.ho-mod .go i{font-style:normal;transition:transform .3s var(--ease)}.ho-mod:hover .go i{transform:translateX(4px)}
+
+/* two-up panels (payables + pump cash) */
+.ho-panels{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+@media(max-width:900px){.ho-panels{grid-template-columns:1fr}}
+.ho-panel{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-sm);overflow:hidden}
+.ho-panel-h{display:flex;justify-content:space-between;align-items:center;padding:15px 18px;border-bottom:1px solid var(--border)}
+.ho-panel-h h3{font-size:14px;margin:0;font-family:var(--fd);font-weight:700;color:var(--ink)}
+.ho-panel-h .pill{font-size:11px;font-weight:700;padding:4px 11px;border-radius:999px}
+.ho-row{display:flex;align-items:center;justify-content:space-between;padding:11px 18px;border-bottom:1px solid var(--border);font-size:13px}
+.ho-row:last-child{border-bottom:0}
+.ho-row .nm{font-weight:600;color:var(--ink);display:flex;align-items:center;gap:9px}
+.ho-row .nm small{color:var(--faint);font-weight:500;font-size:11px}
+.ho-row .amt{font-family:var(--fm);font-weight:600}
+.ho-row .actions{display:flex;gap:6px}
+.ho-empty{padding:28px 18px;text-align:center;color:var(--faint);font-size:13px}
+@media(max-width:560px){.ho-title h1{font-size:24px}}
+</style>
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Head Office</li>
+    </ol>
+</nav>
+
+{% set cashp = (treasury.cash_total / treasury.grand_total * 100) if treasury.grand_total else 0 %}
+{% set bankp = (treasury.bank_total / treasury.grand_total * 100) if treasury.grand_total else 0 %}
+{% set walletp = (treasury.wallet_total / treasury.grand_total * 100) if treasury.grand_total else 0 %}
+
+<div class="ho-wrap">
+    <div class="ho-eyebrow">Central Treasury &amp; Control</div>
+    <div class="ho-title">
+        <h1>Head <b>Office</b></h1>
+        <div class="net">
+            <div class="l">Total Cash &amp; Bank</div>
+            <div class="v"><small>PKR</small>{{ "{:,.0f}".format(treasury.grand_total) }}</div>
+        </div>
+    </div>
+
+    <div class="ho-kpis">
+        <div class="ho-kpi clik" style="--kc:#3DDC84" data-modal="hmCash" role="button" tabindex="0">
+            <div class="more">View <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg></div>
+            <div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>Cash in Hand</div>
+            <div class="val"><small>PKR</small>{{ "{:,.0f}".format(treasury.cash_total) }}</div>
+            <div class="sub">{{ treasury.cash_accounts|length }} account(s) · click for detail</div>
+        </div>
+        <div class="ho-kpi clik" style="--kc:#5B8DEF" data-modal="hmBank" role="button" tabindex="0">
+            <div class="more">View <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg></div>
+            <div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"/></svg>Bank Balance</div>
+            <div class="val {{ 'neg' if treasury.bank_total < 0 }}"><small>PKR</small>{{ "{:,.0f}".format(treasury.bank_total) }}</div>
+            <div class="sub">{{ treasury.bank_accounts|length }} bank account(s) · click for detail</div>
+        </div>
+        <div class="ho-kpi clik" style="--kc:#9B7FE8" data-modal="hmWallet" role="button" tabindex="0">
+            <div class="more">View <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg></div>
+            <div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M16 12h3"/></svg>Wallets</div>
+            <div class="val"><small>PKR</small>{{ "{:,.0f}".format(treasury.wallet_total) }}</div>
+            <div class="sub">{{ treasury.wallet_accounts|length }} wallet(s) · click for detail</div>
+        </div>
+        <div class="ho-kpi" style="--kc:#33D6C8">
+            <div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16M4 21h11M15 9h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V9.5"/></svg>Cash at Pumps</div>
+            <div class="val"><small>PKR</small>{{ "{:,.0f}".format(pumps_cash_total) }}</div>
+            <div class="sub">Awaiting collection</div>
+        </div>
+        <div class="ho-kpi" style="--kc:#FF8A6B">
+            <div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Outstanding Payables</div>
+            <div class="val neg"><small>PKR</small>{{ "{:,.0f}".format(payables_total) }}</div>
+            <div class="sub">We owe vendors / PSO</div>
+        </div>
+    </div>
+
+    <div class="ho-alloc">
+        <div class="h"><span class="t">Where the money sits</span><span class="total">PKR {{ "{:,.0f}".format(treasury.grand_total) }}</span></div>
+        <div class="ho-bar">
+            <span class="s-cash" data-w="{{ cashp|round(1) }}"></span>
+            <span class="s-bank" data-w="{{ bankp|round(1) }}"></span>
+            <span class="s-wallet" data-w="{{ walletp|round(1) }}"></span>
+        </div>
+        <div class="ho-leg">
+            <div><i style="background:#3DDC84"></i>Cash <b>{{ "{:,.0f}".format(treasury.cash_total) }}</b></div>
+            <div><i style="background:#5B8DEF"></i>Bank <b>{{ "{:,.0f}".format(treasury.bank_total) }}</b></div>
+            <div><i style="background:#9B7FE8"></i>Wallets <b>{{ "{:,.0f}".format(treasury.wallet_total) }}</b></div>
+        </div>
+    </div>
+</div>
+
+<div class="ho-sec">Operations</div>
+<div class="ho-mods">
+    {% if can_access_module('petrol_pumps') %}
+    <a class="ho-mod" href="{{ url_for('head_office.cash_receipts_console') }}" style="--mc:#15803D;--mbg:#E8F7EE">
+        <span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></span>
+        <h3>Cash Receive from Pumps</h3>
+        <p>Collect each pump's cash; split to bank or cash in hand.</p>
+        <div class="stat"><span>Received</span> <b>PKR {{ "{:,.0f}".format(counts.cash_received_total) }}</b></div>
+        <span class="go">Open Console <i>&rarr;</i></span>
+    </a>
+    <a class="ho-mod" href="{{ url_for('petrol_pumps.purchases_console') }}" style="--mc:#E08900;--mbg:#FFF6E3">
+        <span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 8h13v8H3zM16 10h3l2 2.5V16h-5"/><circle cx="7" cy="18" r="1.8"/><circle cx="18" cy="18" r="1.8"/></svg></span>
+        <h3>Pump Purchases</h3>
+        <p>Buy fuel &amp; lubricants from PSO for all pumps.</p>
+        <div class="stat"><span>{{ counts.pump_purchases }} purchases</span> <b>PKR {{ "{:,.0f}".format(counts.pump_purchase_total) }}</b></div>
+        <span class="go">Open Console <i>&rarr;</i></span>
+    </a>
+    {% endif %}
+    <a class="ho-mod" href="{{ url_for('head_office.vendor_payments_create') }}" style="--mc:#BE123C;--mbg:#FDEAEF">
+        <span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 10h18M3 6h18v12H3zM7 14h4"/></svg></span>
+        <h3>Vendor / PSO Payments</h3>
+        <p>Pay vendors from a bank account or cash in hand.</p>
+        <div class="stat"><span>{{ counts.vendor_payments }} payments</span> <b>PKR {{ "{:,.0f}".format(counts.payment_total) }}</b></div>
+        <span class="go">Pay a vendor <i>&rarr;</i></span>
+    </a>
+    <a class="ho-mod" href="{{ url_for('head_office.expenses_list') }}" style="--mc:#6D4FC2;--mbg:#F1EDFC">
+        <span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></span>
+        <h3>Head Office Expenses</h3>
+        <p>Home, welfare, office &amp; other expenses.</p>
+        <div class="stat"><span>{{ counts.expenses }} expenses</span> <b>PKR {{ "{:,.0f}".format(counts.expense_total) }}</b></div>
+        <span class="go">Open expenses <i>&rarr;</i></span>
+    </a>
+    <a class="ho-mod" href="{{ url_for('head_office.staff_list') }}" style="--mc:#0F766E;--mbg:#E6F5F2">
+        <span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13A4 4 0 0 1 16 11"/></svg></span>
+        <h3>Staff</h3>
+        <p>Head office employees; pay salary &amp; advances (a head office expense).</p>
+        <div class="stat"><span>{{ counts.staff }} staff</span> <b>PKR {{ "{:,.0f}".format(counts.ho_salary_total) }}</b></div>
+        <span class="go">Open staff <i>&rarr;</i></span>
+    </a>
+    <a class="ho-mod" href="{{ url_for('head_office.cash_transfers_list') }}" style="--mc:#0E7490;--mbg:#E6F6F9">
+        <span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M7 10l-4 4 4 4M3 14h13M17 14l4-4-4-4M21 10H8"/></svg></span>
+        <h3>Cash Transfers</h3>
+        <p>Move money between cash, bank &amp; wallet accounts.</p>
+        <div class="stat"><span>Between accounts</span></div>
+        <span class="go">Open transfers <i>&rarr;</i></span>
+    </a>
+</div>
+
+<div class="ho-panels">
+    {# Outstanding payables #}
+    <div class="ho-panel">
+        <div class="ho-panel-h">
+            <h3>Who To Pay — Outstanding Payables</h3>
+            <span class="pill badge bg-warning text-dark">PKR {{ "{:,.0f}".format(payables_total) }}</span>
+        </div>
+        {% if payables %}
+        {% for row in payables %}
+        <div class="ho-row">
+            <span class="nm">{{ row.vendor.name }} <small>{{ row.vendor.vendor_type.value if row.vendor.vendor_type }}</small></span>
+            <span class="d-flex align-items-center gap-2">
+                <span class="amt text-danger">{{ "{:,.0f}".format(row.balance) }}</span>
+                <a href="{{ url_for('head_office.vendor_payments_create', vendor_id=row.vendor.id) }}" class="btn btn-primary btn-sm">Pay</a>
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}<div class="ho-empty">All clear — nothing outstanding.</div>{% endif %}
+    </div>
+
+    {# Cash sitting at pumps. The figure is DISPLAY-ONLY — head office can only
+       collect the amount confirmed via each pump's daily closing. #}
+    <div class="ho-panel">
+        <div class="ho-panel-h">
+            <h3>Cash Waiting at Pumps</h3>
+            <span class="pill badge bg-success">PKR {{ "{:,.0f}".format(pumps_cash_total) }}</span>
+        </div>
+        <div class="ho-empty" style="padding:8px 2px 12px;text-align:left">
+            Shown for visibility only. Ready to collect (daily closing done):
+            <b class="text-success">PKR {{ "{:,.0f}".format(pumps_collect_total) }}</b>.
+            The rest stays at the pump until its closing is entered.
+        </div>
+        {% if pumps_cash %}
+        {% for row in pumps_cash %}
+        <div class="ho-row">
+            <span class="nm">{{ row.pump.name }}</span>
+            <span class="d-flex align-items-center gap-2">
+                <span class="amt {{ 'text-danger' if row.cash < 0 else 'text-success' }}">{{ "{:,.0f}".format(row.cash) }}</span>
+                {% if row.to_collect > 0 %}
+                <a href="{{ url_for('head_office.cash_receipts_console') }}" class="btn btn-success btn-sm">Receive {{ "{:,.0f}".format(row.to_collect) }}</a>
+                {% else %}
+                <span class="badge bg-secondary" title="Enter this pump's daily closing to release the cash">Closing pending</span>
+                {% endif %}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}<div class="ho-empty">No cash sitting at pumps right now.</div>{% endif %}
+    </div>
+</div>
+
+{# ---- per-account breakdown modals ---- #}
+{% macro acct_modal(mid, title, sub, accounts, total, color, manage_url, transfer_to=None) %}
+<div class="hm-back" data-back="{{ mid }}"></div>
+<div class="hm" id="{{ mid }}" role="dialog" aria-modal="true">
+    <div class="hm-h">
+        <span class="ic" style="background:{{ color }}"><svg viewBox="0 0 24 24" fill="none" stroke="#04201F" stroke-width="2"><path d="M3 21h18M5 21V9l7-5 7 5v12"/></svg></span>
+        <div><h2>{{ title }}</h2><small>{{ sub }}</small></div>
+        <button type="button" class="hm-x" data-close>×</button>
+    </div>
+    <div class="hm-body">
+        {% if accounts %}
+        {% for a in accounts %}
+        <div class="hm-row"><span class="n">{{ a.name }}</span><span class="a {{ 'neg' if (a.current_balance or 0) < 0 }}">PKR {{ "{:,.2f}".format(a.current_balance or 0) }}</span></div>
+        {% endfor %}
+        <div class="hm-tot"><span>Total</span><span class="a">PKR {{ "{:,.2f}".format(total) }}</span></div>
+        {% else %}
+        <div class="hm-none">No accounts of this type yet.</div>
+        {% endif %}
+
+        {% if transfer_to is not none and accounts %}
+        <div class="hm-xfer">
+            <div class="hm-xfer-h">Transfer cash to a bank account</div>
+            {% if transfer_to %}
+            <form method="post" action="{{ url_for('head_office.cash_to_bank_transfer') }}" class="hm-xfer-f">
+                <label>From (cash)</label>
+                <select name="from_account_id" required>
+                    {% for a in accounts %}<option value="{{ a.id }}">{{ a.name }} — {{ "{:,.0f}".format(a.current_balance or 0) }}</option>{% endfor %}
+                </select>
+                <label>To (bank)</label>
+                <select name="to_account_id" required>
+                    <option value="" disabled selected>Select bank account…</option>
+                    {% for b in transfer_to %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}
+                </select>
+                <label>Amount (PKR)</label>
+                <input type="number" step="0.01" min="0" name="amount" placeholder="0" required>
+                <button type="submit">Transfer to bank</button>
+            </form>
+            {% else %}
+            <div class="hm-none">No bank accounts yet — add one in Master Data first.</div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <a class="hm-manage" href="{{ manage_url }}">+ Add / manage these accounts in Master Data &rarr;</a>
+    </div>
+</div>
+{% endmacro %}
+
+{% set murl = url_for('master_data.accounts_list') %}
+{{ acct_modal("hmCash", "Cash in Hand", "Cash accounts", treasury.cash_accounts, treasury.cash_total, "#3DDC84", murl, transfer_to=treasury.bank_accounts) }}
+{{ acct_modal("hmBank", "Bank Accounts", "Where bank money sits", treasury.bank_accounts, treasury.bank_total, "#5B8DEF", murl) }}
+{{ acct_modal("hmWallet", "Wallets", "Easypaisa / JazzCash etc.", treasury.wallet_accounts, treasury.wallet_total, "#9B7FE8", murl) }}
+
+<script>
+(function(){
+"use strict";
+requestAnimationFrame(function(){
+    document.querySelectorAll(".ho-bar span").forEach(function(s){s.style.width=(s.dataset.w||0)+"%";});
+});
+function open(id){var m=document.getElementById(id),b=document.querySelector('[data-back="'+id+'"]');
+    if(m)m.classList.add("open");if(b)b.classList.add("open");}
+function closeAll(){document.querySelectorAll(".hm.open,.hm-back.open").forEach(function(e){e.classList.remove("open")});}
+document.querySelectorAll(".ho-kpi.clik").forEach(function(c){
+    c.addEventListener("click",function(){open(c.dataset.modal)});
+    c.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();open(c.dataset.modal)}});
+});
+document.querySelectorAll(".hm-back,[data-close]").forEach(function(e){e.addEventListener("click",closeAll)});
+document.addEventListener("keydown",function(e){if(e.key==="Escape")closeAll()});
+})();
+</script>
+{% endblock %}

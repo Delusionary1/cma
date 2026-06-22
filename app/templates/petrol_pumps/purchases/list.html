@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Pump Purchases &middot; Petrol Pumps{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('head_office.index') }}">Head Office</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Purchases</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Pump Purchases</h1>
+    <div>
+        <a href="{{ url_for('petrol_pumps.purchases_list', export='xlsx', **filters) }}" class="btn btn-success btn-sm">Export Excel</a>
+        <a href="{{ url_for('petrol_pumps.purchases_list', export='pdf', **filters) }}" class="btn btn-danger btn-sm">Export PDF</a>
+        <a href="{{ url_for('petrol_pumps.purchases_create') }}" class="btn btn-primary">+ New Purchase</a>
+    </div>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-2"><input type="date" name="date" value="{{ filters.date }}" class="form-control"></div>
+    <div class="col-md-2">
+        <select name="petrol_pump_id" class="form-select">
+            <option value="">All pumps</option>
+            {% for pump in pumps %}
+            <option value="{{ pump.id }}" {{ "selected" if filters.petrol_pump_id == pump.id else "" }}>{{ pump.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="vendor_id" class="form-select">
+            <option value="">All vendors</option>
+            {% for vendor in vendors %}
+            <option value="{{ vendor.id }}" {{ "selected" if filters.vendor_id == vendor.id else "" }}>{{ vendor.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2"><input type="text" name="invoice_number" value="{{ filters.invoice_number }}" class="form-control" placeholder="Invoice #"></div>
+    <div class="col-md-2">
+        <select name="delivery_status" class="form-select">
+            <option value="">All statuses</option>
+            {% for s in statuses %}
+            <option value="{{ s }}" {{ "selected" if filters.delivery_status == s else "" }}>{{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-outline-secondary">Filter</button>
+        <a href="{{ url_for('petrol_pumps.purchases_list') }}" class="btn btn-link">Clear</a>
+    </div>
+</form>
+
+{% if purchases %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Date</th><th>Pump</th><th>Vendor</th><th>Invoice</th>
+                <th class="text-end">Total</th><th>Delivery</th><th>Tank Received</th>
+                <th>Stock</th><th>Status</th><th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in purchases %}
+            <tr>
+                <td>{{ p.purchase_date.strftime("%Y-%m-%d") }}</td>
+                <td>{{ p.petrol_pump.name }}</td>
+                <td>{{ p.vendor.name }}</td>
+                <td>{{ p.invoice_number or "—" }}</td>
+                <td class="text-end fw-semibold">{{ "%.2f"|format(p.total_amount) }}</td>
+                <td>{{ p.delivery_status }}</td>
+                <td>{{ "Yes" if p.tank_received else "No" }}</td>
+                <td>
+                    {% if p.stock_posted %}<span class="badge bg-info text-dark">Posted</span>
+                    {% else %}<span class="badge bg-light text-dark">—</span>{% endif %}
+                </td>
+                <td>
+                    {% if p.is_active %}<span class="badge bg-success">Active</span>
+                    {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ url_for('petrol_pumps.purchases_view', purchase_id=p.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                    <a href="{{ url_for('petrol_pumps.purchases_edit', purchase_id=p.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="post" action="{{ url_for('petrol_pumps.purchases_toggle_status', purchase_id=p.id) }}" class="d-inline">
+                        {% if p.is_active %}
+                        <button type="submit" class="btn btn-sm btn-outline-warning">Deactivate</button>
+                        {% else %}
+                        <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
+                        {% endif %}
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No purchases found.</div>
+{% endif %}
+
+<a href="{{ url_for('head_office.index') }}" class="btn btn-link">&larr; Back to Head Office</a>
+{% endblock %}

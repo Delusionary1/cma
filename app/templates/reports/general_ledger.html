@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}General Ledger · Reports{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('reports.index') }}">Reports</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('reports.trial_balance') }}">Trial Balance</a></li>
+        <li class="breadcrumb-item active" aria-current="page">General Ledger</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+    <h1 class="h3 mb-0">General Ledger</h1>
+    {% if account %}
+    <div>
+        <a href="{{ url_for('reports.general_ledger', account_id=account.id, export='xlsx', **filters) }}" class="btn btn-success btn-sm">Export Excel</a>
+        <a href="{{ url_for('reports.general_ledger', account_id=account.id, export='pdf', **filters) }}" class="btn btn-danger btn-sm">Export PDF</a>
+    </div>
+    {% endif %}
+</div>
+<p class="text-muted">Journal-line detail for one chart-of-accounts account (the detail behind the trial balance).</p>
+
+<form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-md-4">
+        <label class="form-label">Account</label>
+        <select name="account_id" class="form-select" onchange="this.form.submit()">
+            <option value="">Select account…</option>
+            {% for a in accounts %}
+            <option value="{{ a.id }}" {{ "selected" if account and account.id == a.id else "" }}>{{ a.code }} — {{ a.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2"><label class="form-label">From</label><input type="date" name="from" value="{{ filters.from }}" class="form-control"></div>
+    <div class="col-md-2"><label class="form-label">To</label><input type="date" name="to" value="{{ filters.to }}" class="form-control"></div>
+    <div class="col-auto"><button class="btn btn-outline-secondary">Apply</button></div>
+</form>
+
+{% if not account %}
+<div class="alert alert-info">Choose a chart account to view its ledger.</div>
+{% else %}
+<h2 class="h6 text-muted">{{ account.code }} — {{ account.name }} <span class="badge bg-secondary">{{ account.account_type }}</span></h2>
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr><th>Date</th><th>Voucher</th><th>Description</th><th class="text-end">Debit</th><th class="text-end">Credit</th><th class="text-end">Balance</th></tr>
+        </thead>
+        <tbody>
+            <tr class="table-light"><td colspan="5" class="fw-semibold">Opening balance</td><td class="text-end fw-semibold">{{ "%.2f"|format(data.opening) }}</td></tr>
+            {% for r in data.rows %}
+            <tr>
+                <td>{{ r.date.strftime("%Y-%m-%d") }}</td>
+                <td class="mono small">{{ r.voucher or "—" }}</td>
+                <td>{{ r.description or "—" }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.debit) if r.debit else "" }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.credit) if r.credit else "" }}</td>
+                <td class="text-end fw-semibold {{ 'text-danger' if r.balance < 0 }}">{{ "%.2f"|format(r.balance) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-muted">No journal lines in this period.</td></tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td colspan="3" class="text-end">Period totals</td>
+                <td class="text-end">{{ "%.2f"|format(data.total_debit) }}</td>
+                <td class="text-end">{{ "%.2f"|format(data.total_credit) }}</td>
+                <td class="text-end">{{ "%.2f"|format(data.closing) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+{% endif %}
+
+<a href="{{ url_for('reports.trial_balance') }}" class="btn btn-link">&larr; Back to Trial Balance</a>
+{% endblock %}

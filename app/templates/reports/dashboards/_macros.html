@@ -1,0 +1,38 @@
+{# Reusable dashboard widgets: KPI cards and horizontal bar breakdowns. #}
+
+{% macro kpi(label, value, accent='#F5A524', money=True, sub=None) %}
+<div class="dk" style="--acc: {{ accent }}">
+    <div class="dk-l">{{ label }}</div>
+    <div class="dk-v">{% if money %}{{ "%.2f"|format(value or 0) }}{% else %}{{ value }}{% endif %}</div>
+    {% if sub %}<div class="dk-s">{{ sub }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro bars(items, label_attr, value_attr, color='#F5A524', money=True, empty='No data for this period.') %}
+{% if items %}
+{% set vals = [] %}
+{% for it in items %}{% set _ = vals.append(it[value_attr]|float) %}{% endfor %}
+{% set vmax = (vals|max) if vals else 0 %}
+<div class="dbars">
+    {% for it in items %}
+    {% set v = it[value_attr]|float %}
+    <div class="dbar">
+        <div class="dbar-h"><span>{{ it[label_attr] }}</span><b>{% if money %}{{ "%.2f"|format(v) }}{% else %}{{ it[value_attr] }}{% endif %}</b></div>
+        <div class="dbar-t"><i style="width: {{ ((v / vmax * 100) if vmax else 0)|round(1) }}%; background: {{ color }}"></i></div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info mb-0">{{ empty }}</div>
+{% endif %}
+{% endmacro %}
+
+{% macro chips(items, label_attr, value_attr) %}
+<div class="dchips">
+    {% for it in items %}
+    <div class="dchip"><b>{{ it[value_attr] }}</b><span>{{ it[label_attr] }}</span></div>
+    {% else %}
+    <div class="alert alert-info mb-0">No data for this period.</div>
+    {% endfor %}
+</div>
+{% endmacro %}

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {{ "Edit" if mode == "edit" else "New" }} Account &middot; Accounting
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('accounting.index') }}">Accounting</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('accounting.chart_of_accounts_list') }}">Chart of Accounts</a></li>
+        <li class="breadcrumb-item active" aria-current="page">
+            {{ "Edit" if mode == "edit" else "New" }}
+        </li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">{{ "Edit Account" if mode == "edit" else "New Account" }}</h1>
+
+<div class="row">
+    <div class="col-12 col-lg-8">
+        <form method="post">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="code" class="form-label">Code <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="code" name="code"
+                           value="{{ form.code }}" required>
+                </div>
+                <div class="col-md-8 mb-3">
+                    <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="name" name="name"
+                           value="{{ form.name }}" required>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="account_type" class="form-label">
+                        Account Type <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="account_type" name="account_type" required>
+                        <option value="" disabled
+                            {{ "selected" if not form.account_type else "" }}>
+                            -- Select a type --
+                        </option>
+                        {% for at in account_types %}
+                        <option value="{{ at }}"
+                            {{ "selected" if form.account_type == at else "" }}>
+                            {{ at }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="business_unit_id" class="form-label">Business Unit</label>
+                    <select class="form-select" id="business_unit_id" name="business_unit_id">
+                        <option value="" {{ "selected" if not form.business_unit_id else "" }}>
+                            Global (no business unit)
+                        </option>
+                        {% for unit in business_units %}
+                        <option value="{{ unit.id }}"
+                            {{ "selected" if form.business_unit_id == unit.id else "" }}>
+                            {{ unit.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="parent_id" class="form-label">Parent Account</label>
+                <select class="form-select" id="parent_id" name="parent_id">
+                    <option value="" {{ "selected" if not form.parent_id else "" }}>
+                        -- None --
+                    </option>
+                    {% for choice in parent_choices %}
+                    {% if not (mode == "edit" and choice.id == account.id) %}
+                    <option value="{{ choice.id }}"
+                        {{ "selected" if form.parent_id == choice.id else "" }}>
+                        {{ choice.code }} - {{ choice.name }}
+                    </option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="is_active"
+                       name="is_active" {{ "checked" if form.is_active else "" }}>
+                <label class="form-check-label" for="is_active">Active</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                {{ "Save Changes" if mode == "edit" else "Create" }}
+            </button>
+            {% if mode == "edit" %}
+            <a href="{{ url_for('accounting.chart_of_accounts_view', account_id=account.id) }}"
+               class="btn btn-link">Cancel</a>
+            {% else %}
+            <a href="{{ url_for('accounting.chart_of_accounts_list') }}"
+               class="btn btn-link">Cancel</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}

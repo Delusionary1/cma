@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "Edit" if mode == "edit" else "New" }} Tank &middot; Pump Setup{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.setup') }}">Setup</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.tanks_list') }}">Tanks</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ "Edit" if mode == "edit" else "New" }}</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">{{ "Edit Tank" if mode == "edit" else "New Tank" }}</h1>
+
+{% if not pumps or not products %}
+<div class="alert alert-warning">
+    Tanks need an active pump and fuel product. Please make sure both exist first.
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-12 col-lg-8">
+        <form method="post">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="petrol_pump_id" class="form-label">Petrol Pump <span class="text-danger">*</span></label>
+                    <select class="form-select" id="petrol_pump_id" name="petrol_pump_id" required>
+                        <option value="" disabled {{ "selected" if not form.petrol_pump_id else "" }}>-- Select a pump --</option>
+                        {% for pump in pumps %}
+                        <option value="{{ pump.id }}" {{ "selected" if form.petrol_pump_id == pump.id else "" }}>{{ pump.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="product_id" class="form-label">Product (fuel) <span class="text-danger">*</span></label>
+                    <select class="form-select" id="product_id" name="product_id" required>
+                        <option value="" disabled {{ "selected" if not form.product_id else "" }}>-- Select a fuel product --</option>
+                        {% for product in products %}
+                        <option value="{{ product.id }}" {{ "selected" if form.product_id == product.id else "" }}>{{ product.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="tank_name" class="form-label">Tank Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="tank_name" name="tank_name" value="{{ form.tank_name }}" required>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="capacity_liters" class="form-label">Capacity (liters)</label>
+                    <input type="number" step="0.01" min="0" class="form-control" id="capacity_liters" name="capacity_liters" value="{{ form.capacity_liters }}">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="opening_stock_liters" class="form-label">Opening Stock (liters)</label>
+                    <input type="number" step="0.01" min="0" class="form-control" id="opening_stock_liters" name="opening_stock_liters" value="{{ form.opening_stock_liters }}">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="current_stock_liters" class="form-label">Current Stock (liters)</label>
+                    <input type="number" step="0.01" min="0" class="form-control" id="current_stock_liters" name="current_stock_liters" value="{{ form.current_stock_liters }}">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="dip_reading" class="form-label">Dip Reading</label>
+                <input type="number" step="0.01" min="0" class="form-control" id="dip_reading" name="dip_reading" value="{{ form.dip_reading }}">
+            </div>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {{ "checked" if form.is_active else "" }}>
+                <label class="form-check-label" for="is_active">Active</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">{{ "Save Changes" if mode == "edit" else "Create" }}</button>
+            {% if mode == "edit" %}
+            <a href="{{ url_for('petrol_pumps.tanks_view', tank_id=tank.id) }}" class="btn btn-link">Cancel</a>
+            {% else %}
+            <a href="{{ url_for('petrol_pumps.tanks_list') }}" class="btn btn-link">Cancel</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}

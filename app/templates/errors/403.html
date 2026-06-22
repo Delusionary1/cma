@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Access Denied &middot; Oil &amp; Gas ERP{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="display-4 fw-bold">403</h1>
+    <p class="lead">You do not have permission to access this page.</p>
+    <p class="text-muted">
+        This area is restricted to certain roles. If you believe this is a
+        mistake, please contact your administrator.
+    </p>
+    <a href="{{ url_for('core.home') }}" class="btn btn-primary mt-2">
+        Back to Home
+    </a>
+</div>
+{% endblock %}

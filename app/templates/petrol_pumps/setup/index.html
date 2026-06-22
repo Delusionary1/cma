@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Pump Setup &middot; Petrol Pumps{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Setup</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">Petrol Pump Setup</h1>
+
+<div class="row g-3">
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5 card-title">Machines</h2>
+                <p class="card-text text-muted">Machines / dispensers per pump.</p>
+                <span class="badge bg-secondary mb-2">{{ counts.machines }} total</span>
+                <div>
+                    <a href="{{ url_for('petrol_pumps.machines_list') }}" class="btn btn-primary btn-sm">Manage</a>
+                    <a href="{{ url_for('petrol_pumps.machines_create') }}" class="btn btn-outline-secondary btn-sm">+ New</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5 card-title">Nozzles</h2>
+                <p class="card-text text-muted">Fuel nozzles on each machine.</p>
+                <span class="badge bg-secondary mb-2">{{ counts.nozzles }} total</span>
+                <div>
+                    <a href="{{ url_for('petrol_pumps.nozzles_list') }}" class="btn btn-primary btn-sm">Manage</a>
+                    <a href="{{ url_for('petrol_pumps.nozzles_create') }}" class="btn btn-outline-secondary btn-sm">+ New</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5 card-title">Tanks</h2>
+                <p class="card-text text-muted">Fuel storage tanks per pump.</p>
+                <span class="badge bg-secondary mb-2">{{ counts.tanks }} total</span>
+                <div>
+                    <a href="{{ url_for('petrol_pumps.tanks_list') }}" class="btn btn-primary btn-sm">Manage</a>
+                    <a href="{{ url_for('petrol_pumps.tanks_create') }}" class="btn btn-outline-secondary btn-sm">+ New</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<a href="{{ url_for('master_data.index') }}" class="btn btn-link mt-3">&larr; Back to Master Data</a>
+{% endblock %}

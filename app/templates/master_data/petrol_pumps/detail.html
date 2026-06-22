@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}{{ pump.name }} &middot; Petrol Pumps{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.petrol_pumps_list') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ pump.name }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{{ pump.name }}</h1>
+    <div>
+        <a href="{{ url_for('master_data.petrol_pumps_edit', pump_id=pump.id) }}"
+           class="btn btn-outline-secondary">Edit</a>
+        <form method="post"
+              action="{{ url_for('master_data.petrol_pumps_toggle_status', pump_id=pump.id) }}"
+              class="d-inline">
+            {% if pump.is_active %}
+            <button type="submit" class="btn btn-outline-warning">Deactivate</button>
+            {% else %}
+            <button type="submit" class="btn btn-outline-success">Activate</button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr>
+            <th style="width: 220px;">Status</th>
+            <td>
+                {% if pump.is_active %}
+                <span class="badge bg-success">Active</span>
+                {% else %}
+                <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>Business Unit</th>
+            <td>
+                <a href="{{ url_for('master_data.business_units_view', unit_id=pump.business_unit_id) }}">
+                    {{ pump.business_unit.name }}
+                </a>
+                <code class="ms-1">{{ pump.business_unit.type.value }}</code>
+            </td>
+        </tr>
+        <tr><th>Location</th><td>{{ pump.location or "—" }}</td></tr>
+        <tr><th>PSO Account Name</th><td>{{ pump.pso_account_name or "—" }}</td></tr>
+        <tr><th>Cash Account Name</th><td>{{ pump.cash_account_name or "—" }}</td></tr>
+        <tr><th>Bank Account Name</th><td>{{ pump.bank_account_name or "—" }}</td></tr>
+        <tr><th>Manager Name</th><td>{{ pump.manager_name or "—" }}</td></tr>
+        <tr><th>Created</th><td>{{ pump.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+        <tr><th>Updated</th><td>{{ pump.updated_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+    </tbody>
+</table>
+
+<a href="{{ url_for('master_data.petrol_pumps_list') }}" class="btn btn-link">
+    &larr; Back to Petrol Pumps
+</a>
+{% endblock %}

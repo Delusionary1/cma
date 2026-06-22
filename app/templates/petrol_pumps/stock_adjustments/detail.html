@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Adjustment #{{ adjustment.id }} · Petrol Pumps{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.stock_adjustments_list') }}">Stock Adjustments</a></li>
+        <li class="breadcrumb-item active" aria-current="page">#{{ adjustment.id }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Stock Adjustment #{{ adjustment.id }}</h1>
+    <div class="d-flex gap-2 flex-wrap">
+        {% if adjustment.status == 'Pending' %}
+        <a href="{{ url_for('petrol_pumps.stock_adjustments_edit', adjustment_id=adjustment.id) }}" class="btn btn-outline-secondary">Edit</a>
+        {% endif %}
+        {% if can_approve %}
+            {% if adjustment.status != 'Approved' %}
+            <form method="post" action="{{ url_for('petrol_pumps.stock_adjustments_approve', adjustment_id=adjustment.id) }}" class="d-inline">
+                <button type="submit" class="btn btn-success">Approve &amp; Post Stock</button>
+            </form>
+            {% endif %}
+            {% if adjustment.status != 'Rejected' %}
+            <form method="post" action="{{ url_for('petrol_pumps.stock_adjustments_reject', adjustment_id=adjustment.id) }}" class="d-inline d-flex gap-2">
+                <input type="text" name="rejection_reason" class="form-control form-control-sm" placeholder="Reason (optional)" style="max-width:220px">
+                <button type="submit" class="btn btn-danger">Reject</button>
+            </form>
+            {% endif %}
+            {% if adjustment.status == 'Rejected' %}
+            <form method="post" action="{{ url_for('petrol_pumps.stock_adjustments_reopen', adjustment_id=adjustment.id) }}" class="d-inline">
+                <button type="submit" class="btn btn-outline-secondary">Reopen</button>
+            </form>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-3">
+        <div class="card text-bg-light"><div class="card-body">
+            <div class="text-muted small">System Stock</div>
+            <div class="h4 mb-0">{{ "%.2f"|format(adjustment.system_stock_liters) }} L</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-light"><div class="card-body">
+            <div class="text-muted small">Physical Stock</div>
+            <div class="h4 mb-0">{{ "%.2f"|format(adjustment.physical_stock_liters) }} L</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-light"><div class="card-body">
+            <div class="text-muted small">Difference</div>
+            <div class="h4 mb-0 {{ 'text-danger' if adjustment.difference_liters < 0 else ('text-success' if adjustment.difference_liters > 0 else '') }}">
+                {{ "%+.2f"|format(adjustment.difference_liters) }} L
+            </div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-light"><div class="card-body">
+            <div class="text-muted small">Status</div>
+            <div class="h5 mb-0">
+                {% if adjustment.status == 'Approved' %}<span class="badge bg-success">Approved</span>
+                {% elif adjustment.status == 'Rejected' %}<span class="badge bg-danger">Rejected</span>
+                {% else %}<span class="badge bg-warning text-dark">Pending Approval</span>{% endif %}
+            </div>
+        </div></div>
+    </div>
+</div>
+
+{% if adjustment.status == 'Pending' %}
+<div class="alert alert-warning">This adjustment has <strong>not</strong> changed tank stock yet — it is awaiting approval.</div>
+{% elif adjustment.status == 'Approved' and adjustment.stock_posted %}
+<div class="alert alert-success">Approved and posted: tank stock was {{ 'increased' if adjustment.is_gain else 'decreased' }} by {{ "%.2f"|format(adjustment.difference_liters|abs) }} L and recorded in the stock movement ledger.</div>
+{% elif adjustment.status == 'Rejected' %}
+<div class="alert alert-danger">Rejected{{ ' — ' ~ adjustment.rejection_reason if adjustment.rejection_reason else '' }}. No stock effect remains.</div>
+{% endif %}
+
+<table class="table">
+    <tbody>
+        <tr><th style="width:220px;">Date</th><td>{{ adjustment.adjustment_date.strftime("%Y-%m-%d") }}</td></tr>
+        <tr><th>Petrol Pump</th><td>{{ adjustment.petrol_pump.name }}</td></tr>
+        <tr>
+            <th>Tank</th>
+            <td><a href="{{ url_for('petrol_pumps.tanks_view', tank_id=adjustment.tank_id) }}">{{ adjustment.tank.tank_name }}</a></td>
+        </tr>
+        <tr><th>Product</th><td>{{ adjustment.product.name }}</td></tr>
+        <tr>
+            <th>Result</th>
+            <td>
+                {% if adjustment.difference_liters > 0 %}<span class="badge bg-success">Stock Gain</span>
+                {% elif adjustment.difference_liters < 0 %}<span class="badge bg-danger">Stock Loss</span>
+                {% else %}<span class="badge bg-secondary">No Difference</span>{% endif %}
+            </td>
+        </tr>
+        <tr><th>Stock Posted</th><td>{{ "Yes" if adjustment.stock_posted else "No" }}</td></tr>
+        <tr><th>Notes</th><td>{{ adjustment.notes or "—" }}</td></tr>
+        <tr><th>Entered By</th><td>{{ adjustment.created_by.full_name if adjustment.created_by else "—" }}</td></tr>
+        <tr>
+            <th>Approved By</th>
+            <td>
+                {{ adjustment.approved_by.full_name if adjustment.approved_by else "—" }}
+                {% if adjustment.approved_at %} · {{ adjustment.approved_at.strftime("%Y-%m-%d %H:%M") }}{% endif %}
+            </td>
+        </tr>
+        <tr><th>Created</th><td>{{ adjustment.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+    </tbody>
+</table>
+
+<a href="{{ url_for('petrol_pumps.stock_adjustments_list') }}" class="btn btn-link">&larr; Back to Stock Adjustments</a>
+{% endblock %}

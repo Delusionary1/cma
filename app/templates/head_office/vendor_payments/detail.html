@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Vendor Payment #{{ payment.id }} &middot; Head Office{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('head_office.index') }}">Head Office</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('head_office.vendor_payments_list') }}">Vendor / PSO Payments</a></li>
+        <li class="breadcrumb-item active" aria-current="page">#{{ payment.id }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Vendor Payment #{{ payment.id }}</h1>
+    <div>
+        <a href="{{ url_for('head_office.vendor_payments_edit', payment_id=payment.id) }}" class="btn btn-outline-secondary">Edit</a>
+        <form method="post" action="{{ url_for('head_office.vendor_payments_toggle_status', payment_id=payment.id) }}" class="d-inline">
+            {% if payment.is_active %}<button class="btn btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-outline-success">Activate</button>{% endif %}
+        </form>
+    </div>
+</div>
+
+{% if payment.is_posted %}
+<div class="alert alert-info">This payment decreased the balance of <strong>{{ payment.paid_from_account.name }}</strong>.</div>
+{% else %}
+<div class="alert alert-light border">This payment did not post to any account balance (no account selected, or it is inactive).</div>
+{% endif %}
+
+<table class="table">
+    <tbody>
+        <tr><th style="width:220px;">Status</th><td>{% if payment.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td></tr>
+        <tr><th>Date</th><td>{{ payment.payment_date.strftime("%Y-%m-%d") }}</td></tr>
+        <tr><th>Vendor</th><td>{{ payment.vendor.name }} ({{ payment.vendor.vendor_type.value }})</td></tr>
+        <tr><th>Amount</th><td class="fw-bold">{{ "%.2f"|format(payment.amount) }}</td></tr>
+        <tr><th>Payment Method</th><td>{{ payment.payment_method }}</td></tr>
+        <tr><th>Paid From</th><td>{{ payment.paid_from_account.name if payment.paid_from_account else "—" }}</td></tr>
+        <tr><th>Reference Number</th><td>{{ payment.reference_number or "—" }}</td></tr>
+        <tr><th>Notes</th><td>{{ payment.notes or "—" }}</td></tr>
+        <tr><th>Created By</th><td>{{ payment.created_by.full_name if payment.created_by else "—" }}</td></tr>
+    </tbody>
+</table>
+
+{% import "_approval.html" as appr with context %}
+{{ appr.banner('vendor_payment', payment.id) }}
+
+<a href="{{ url_for('head_office.vendor_payments_list') }}" class="btn btn-link">&larr; Back to Vendor Payments</a>
+{% endblock %}

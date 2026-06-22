@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}{{ vehicle.vehicle_number }} &middot; Vehicles{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.vehicles_list') }}">Vehicles</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ vehicle.vehicle_number }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{{ vehicle.vehicle_number }}</h1>
+    <div>
+        <a href="{{ url_for('master_data.vehicles_edit', vehicle_id=vehicle.id) }}"
+           class="btn btn-outline-secondary">Edit</a>
+        <form method="post"
+              action="{{ url_for('master_data.vehicles_toggle_status', vehicle_id=vehicle.id) }}"
+              class="d-inline">
+            {% if vehicle.is_active %}
+            <button type="submit" class="btn btn-outline-warning">Deactivate</button>
+            {% else %}
+            <button type="submit" class="btn btn-outline-success">Activate</button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr>
+            <th style="width: 220px;">Status</th>
+            <td>
+                {% if vehicle.is_active %}
+                <span class="badge bg-success">Active</span>
+                {% else %}
+                <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+            </td>
+        </tr>
+        <tr><th>Vehicle Type</th><td>{{ vehicle.vehicle_type }}</td></tr>
+        <tr>
+            <th>Capacity</th>
+            <td>{{ "%.2f"|format(vehicle.capacity) if vehicle.capacity is not none else "—" }}</td>
+        </tr>
+        <tr><th>Ownership Type</th><td>{{ vehicle.ownership_type }}</td></tr>
+        <tr><th>Owner Name</th><td>{{ vehicle.owner_name or "—" }}</td></tr>
+        <tr>
+            <th>Assigned Driver</th>
+            <td>
+                {% if vehicle.driver %}
+                <a href="{{ url_for('master_data.drivers_view', driver_id=vehicle.driver_id) }}">
+                    {{ vehicle.driver.name }}
+                </a>
+                {% else %}—{% endif %}
+            </td>
+        </tr>
+        <tr><th>Documents Path</th><td>{{ vehicle.documents_path or "—" }}</td></tr>
+        <tr><th>Insurance Details</th><td>{{ vehicle.insurance_details or "—" }}</td></tr>
+        <tr><th>Fitness / Permit Details</th><td>{{ vehicle.fitness_permit_details or "—" }}</td></tr>
+        <tr><th>Created</th><td>{{ vehicle.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+        <tr><th>Updated</th><td>{{ vehicle.updated_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+    </tbody>
+</table>
+
+<a href="{{ url_for('master_data.vehicles_list') }}" class="btn btn-link">
+    &larr; Back to Vehicles
+</a>
+{% endblock %}

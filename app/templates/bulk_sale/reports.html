@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk Sale Reports · CMA &amp; Co.{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('bulk_sale.index') }}">Bulk Sale</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Reports</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Bulk Sale Reports</h1>
+    <div>
+        <a href="{{ url_for('bulk_sale.reports', export='xlsx', **filters) }}" class="btn btn-success btn-sm">Export Excel</a>
+        <a href="{{ url_for('bulk_sale.reports', export='pdf', **filters) }}" class="btn btn-danger btn-sm">Export PDF</a>
+    </div>
+</div>
+<p class="text-muted">Customer-wise, product-wise and pump-wise sale, profit and outstanding receivable (BRD §13.2).</p>
+
+<form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-auto"><label class="form-label">From</label><input type="date" name="from" value="{{ filters.from }}" class="form-control"></div>
+    <div class="col-auto"><label class="form-label">To</label><input type="date" name="to" value="{{ filters.to }}" class="form-control"></div>
+    <div class="col-auto"><button class="btn btn-outline-secondary">Apply</button>
+        {% if filters.from or filters.to %}<a href="{{ url_for('bulk_sale.reports') }}" class="btn btn-link">Clear</a>{% endif %}
+    </div>
+</form>
+
+{% macro grp_table(title, grp, key) %}
+<h2 class="h5 mb-2">{{ title }}</h2>
+{% if grp.rows %}
+<div class="table-responsive mb-4">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr><th>{{ key }}</th><th class="text-center">Deals</th><th class="text-end">Liters</th><th class="text-end">Sale</th><th class="text-end">Net Profit</th><th class="text-end">Outstanding</th></tr>
+        </thead>
+        <tbody>
+            {% for r in grp.rows %}
+            <tr>
+                <td class="fw-semibold">{{ r.label }}</td>
+                <td class="text-center">{{ r.deals }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.qty) }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.sale) }}</td>
+                <td class="text-end {{ 'text-danger' if r.net < 0 else 'text-success' }}">{{ "%.2f"|format(r.net) }}</td>
+                <td class="text-end {{ 'text-danger' if r.outstanding > 0 }}">{{ "%.2f"|format(r.outstanding) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td class="text-end">Total</td>
+                <td class="text-center">{{ grp.totals.deals }}</td>
+                <td class="text-end">{{ "%.2f"|format(grp.totals.qty) }}</td>
+                <td class="text-end">{{ "%.2f"|format(grp.totals.sale) }}</td>
+                <td class="text-end {{ 'text-danger' if grp.totals.net < 0 else 'text-success' }}">{{ "%.2f"|format(grp.totals.net) }}</td>
+                <td class="text-end">{{ "%.2f"|format(grp.totals.outstanding) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No bulk sales in this period.</div>
+{% endif %}
+{% endmacro %}
+
+{{ grp_table("Customer-wise", data.customers, "Customer") }}
+{{ grp_table("Product-wise", data.products, "Product") }}
+{{ grp_table("Pump-wise", data.pumps, "Pump") }}
+
+<a href="{{ url_for('bulk_sale.index') }}" class="btn btn-link">&larr; Back to Bulk Sale</a>
+{% endblock %}

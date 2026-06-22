@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Head Office Staff{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('head_office.index') }}">Head Office</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Staff</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Head Office Staff</h1>
+    <div>
+        <a href="{{ url_for('head_office.ho_salary_list') }}" class="btn btn-outline-secondary btn-sm">Salary / Advance Payments</a>
+        <a href="{{ url_for('head_office.staff_create') }}" class="btn btn-primary">+ New Employee</a>
+    </div>
+</div>
+<p class="text-muted">Head office employees. Their salary &amp; advance payments are paid as Head Office expenses.</p>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-4 flex-grow-1"><input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Search by name, CNIC or phone…"></div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Search</button>
+        <a href="{{ url_for('head_office.staff_list') }}" class="btn btn-link">Clear</a>
+    </div>
+</form>
+
+{% if staff %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead><tr><th>Employee</th><th>Designation</th><th>Phone</th><th class="text-end">Monthly Salary</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+        <tbody>
+            {% for s in staff %}
+            <tr>
+                <td>{{ s.employee_name }}</td>
+                <td>{{ s.designation or "—" }}</td>
+                <td>{{ s.phone_number or "—" }}</td>
+                <td class="text-end">{{ "%.2f"|format(s.monthly_salary) }}</td>
+                <td>{% if s.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ url_for('head_office.staff_view', staff_id=s.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                    <a href="{{ url_for('head_office.staff_edit', staff_id=s.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="post" action="{{ url_for('head_office.staff_toggle_status', staff_id=s.id) }}" class="d-inline">
+                        {% if s.is_active %}<button class="btn btn-sm btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-sm btn-outline-success">Activate</button>{% endif %}
+                    </form>
+                    <form method="post" action="{{ url_for('head_office.staff_delete', staff_id=s.id) }}" class="d-inline" onsubmit="return confirm('Permanently delete employee \'{{ s.employee_name|e }}\'?');">
+                        <button class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No staff yet. Use <strong>+ New Employee</strong> to add one.</div>
+{% endif %}
+
+<a href="{{ url_for('head_office.index') }}" class="btn btn-link">&larr; Back to Head Office</a>
+{% endblock %}

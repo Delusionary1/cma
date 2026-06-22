@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {{ "Edit" if mode == "edit" else "New" }} Account &middot; Master Data
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.accounts_list') }}">Cash / Bank Accounts</a></li>
+        <li class="breadcrumb-item active" aria-current="page">
+            {{ "Edit" if mode == "edit" else "New" }}
+        </li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">{{ "Edit Account" if mode == "edit" else "New Account" }}</h1>
+
+<div class="row">
+    <div class="col-12 col-lg-8">
+        <form method="post">
+            <div class="row">
+                <div class="col-md-7 mb-3">
+                    <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="name" name="name"
+                           value="{{ form.name }}" required>
+                </div>
+                <div class="col-md-5 mb-3">
+                    <label for="business_unit_id" class="form-label">Business Unit</label>
+                    <select class="form-select" id="business_unit_id" name="business_unit_id">
+                        <option value="" {{ "selected" if not form.business_unit_id else "" }}>
+                            Global (no business unit)
+                        </option>
+                        {% for unit in business_units %}
+                        <option value="{{ unit.id }}"
+                            {{ "selected" if form.business_unit_id == unit.id else "" }}>
+                            {{ unit.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="petrol_pump_id" class="form-label">Belongs to Petrol Pump</label>
+                    <select class="form-select" id="petrol_pump_id" name="petrol_pump_id">
+                        <option value="" {{ "selected" if not form.petrol_pump_id else "" }}>— Not a pump account —</option>
+                        {% for p in pumps %}
+                        <option value="{{ p.id }}" {{ "selected" if form.petrol_pump_id == p.id else "" }}>{{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">Tie this account to one pump (its bank / Easypaisa / JazzCash). The pump's daily closing will then only offer this account.</div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="account_type" class="form-label">
+                        Account Type <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="account_type" name="account_type" required>
+                        <option value="" disabled
+                            {{ "selected" if not form.account_type else "" }}>
+                            -- Select a type --
+                        </option>
+                        {% for at in account_types %}
+                        <option value="{{ at }}"
+                            {{ "selected" if form.account_type == at else "" }}>
+                            {{ at }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="bank_name" class="form-label">Bank Name</label>
+                    <input type="text" class="form-control" id="bank_name"
+                           name="bank_name" value="{{ form.bank_name }}">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="account_number" class="form-label">Account Number</label>
+                <input type="text" class="form-control" id="account_number"
+                       name="account_number" value="{{ form.account_number }}">
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="opening_balance" class="form-label">Opening Balance</label>
+                    <input type="number" step="0.01" min="0" class="form-control"
+                           id="opening_balance" name="opening_balance"
+                           value="{{ form.opening_balance }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="current_balance" class="form-label">Current Balance</label>
+                    <input type="number" step="0.01" min="0" class="form-control"
+                           id="current_balance" name="current_balance"
+                           value="{{ form.current_balance }}">
+                </div>
+            </div>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="is_active"
+                       name="is_active" {{ "checked" if form.is_active else "" }}>
+                <label class="form-check-label" for="is_active">Active</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                {{ "Save Changes" if mode == "edit" else "Create" }}
+            </button>
+            {% if mode == "edit" %}
+            <a href="{{ url_for('master_data.accounts_view', account_id=account.id) }}"
+               class="btn btn-link">Cancel</a>
+            {% else %}
+            <a href="{{ url_for('master_data.accounts_list') }}"
+               class="btn btn-link">Cancel</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}

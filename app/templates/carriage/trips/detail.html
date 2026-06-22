@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}{{ trip.trip_number }} &middot; Carriage{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('carriage.index') }}">Carriage</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('carriage.trips_list') }}">Trips</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ trip.trip_number }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{{ trip.trip_number }}</h1>
+    <div>
+        <a href="{{ url_for('carriage.trips_edit', trip_id=trip.id) }}" class="btn btn-outline-secondary">Edit</a>
+        <form method="post" action="{{ url_for('carriage.trips_toggle_status', trip_id=trip.id) }}" class="d-inline">
+            {% if trip.is_active %}<button class="btn btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-outline-success">Activate</button>{% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-4"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Total Freight</div><div class="h4">{{ "%.2f"|format(trip.total_freight_amount) }}</div></div></div></div>
+    <div class="col-md-4"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Total Expenses</div><div class="h4">{{ "%.2f"|format(trip.total_expenses) }}</div></div></div></div>
+    <div class="col-md-4"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Net Profit</div><div class="h4 {{ 'text-danger' if trip.net_profit < 0 else 'text-success' }}">{{ "%.2f"|format(trip.net_profit) }}</div></div></div></div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr><th style="width:220px;">Status</th><td>{% if trip.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %} &middot; {{ trip.trip_status }}</td></tr>
+        <tr><th>Date</th><td>{{ trip.trip_date.strftime("%Y-%m-%d") }}</td></tr>
+        <tr><th>Trip Type</th><td>{{ trip.trip_type }}</td></tr>
+        <tr><th>Business Reference</th><td>{{ trip.business_reference or "—" }}</td></tr>
+        <tr><th>Ownership</th><td>{{ trip.vehicle_ownership }}</td></tr>
+        <tr><th>Vehicle</th><td>{{ trip.vehicle.vehicle_number if trip.vehicle else (trip.vehicle_number or "—") }}</td></tr>
+        <tr><th>Rented Provider</th><td>{{ trip.rented_vehicle_vendor.name if trip.rented_vehicle_vendor else "—" }}</td></tr>
+        <tr><th>Driver</th><td>{{ trip.driver.name if trip.driver else (trip.driver_name or "—") }}{% if trip.driver_contact %} ({{ trip.driver_contact }}){% endif %}</td></tr>
+        <tr><th>Product</th><td>{{ trip.product.name if trip.product else "—" }}</td></tr>
+        <tr><th>Quantity Loaded / Delivered</th><td>{{ "%.2f"|format(trip.quantity_loaded) }} / {{ "%.2f"|format(trip.quantity_delivered) }}</td></tr>
+        <tr><th>Loading &rarr; Unloading</th><td>{{ trip.loading_point or "—" }} &rarr; {{ trip.unloading_point or "—" }}</td></tr>
+        <tr><th>Party</th><td>{{ trip.party_name or "—" }}</td></tr>
+        <tr><th>Freight</th><td>Rate {{ "%.2f"|format(trip.freight_rate) }} &middot; Total {{ "%.2f"|format(trip.total_freight_amount) }} &middot; Paid by {{ trip.freight_paid_by or "—" }}</td></tr>
+        <tr><th>Expenses</th><td>Rent {{ "%.2f"|format(trip.rent_amount) }}, Fuel {{ "%.2f"|format(trip.fuel_expense) }}, Toll {{ "%.2f"|format(trip.toll_tax) }}, Load/Unload {{ "%.2f"|format(trip.loading_unloading_expense) }}, Driver {{ "%.2f"|format(trip.driver_expense) }}, Maint {{ "%.2f"|format(trip.maintenance_expense) }}, Other {{ "%.2f"|format(trip.other_expense) }}</td></tr>
+        <tr><th>Notes</th><td>{{ trip.notes or "—" }}</td></tr>
+        <tr><th>Created By</th><td>{{ trip.created_by.full_name if trip.created_by else "—" }}</td></tr>
+    </tbody>
+</table>
+
+<a href="{{ url_for('carriage.trips_list') }}" class="btn btn-link">&larr; Back to Trips</a>
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Master Data &middot; Oil &amp; Gas ERP{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Master Data</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">Master Data</h1>
+
+<div class="row g-3">
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5 card-title">Business Units</h2>
+                <p class="card-text text-muted">
+                    Manage the company's business units.
+                </p>
+                <span class="badge bg-secondary mb-2">
+                    {{ counts.business_units }} total
+                </span>
+                <div>
+                    <a href="{{ url_for('master_data.business_units_list') }}"
+                       class="btn btn-primary btn-sm">Manage</a>
+                    <a href="{{ url_for('master_data.business_units_create') }}"
+                       class="btn btn-outline-secondary btn-sm">+ New</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5 card-title">Petrol Pumps</h2>
+                <p class="card-text text-muted">
+                    Add pumps and set up each one's tanks &amp; machines — one
+                    console with everything.
+                </p>
+                <span class="badge bg-secondary mb-2">
+                    {{ counts.petrol_pumps }} total
+                </span>
+                <div>
+                    <a href="{{ url_for('master_data.pumps_console') }}"
+                       class="btn btn-primary btn-sm">Open Console</a>
+                    <a href="{{ url_for('master_data.petrol_pumps_list') }}"
+                       class="btn btn-outline-secondary btn-sm">List</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5 card-title">Product Categories</h2>
+                <p class="card-text text-muted">
+                    Group products (fuel, lubricants, agency products).
+                </p>
+                <span class="badge bg-secondary mb-2">
+                    {{ counts.product_categories }} total
+                </span>
+                <div>
+                    <a href="{{ url_for('master_data.product_categories_list') }}"
+                       class="btn btn-primary btn-sm">Manage</a>
+                    <a href="{{ url_for('master_data.product_categories_create') }}"
+                       class="btn btn-outline-secondary btn-sm">+ New</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5 card-title">Products</h2>
+                <p class="card-text text-muted">
+                    Manage products, units and default rates.
+                </p>
+                <span class="badge bg-secondary mb-2">
+                    {{ counts.products }} total
+                </span>
+                <div>
+                    <a href="{{ url_for('master_data.products_list') }}"
+                       class="btn btn-primary btn-sm">Manage</a>
+                    <a href="{{ url_for('master_data.products_create') }}"
+                       class="btn btn-outline-secondary btn-sm">+ New</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5 card-title">Customers</h2>
+                <p class="card-text text-muted">
+                    Manage customers per business unit.
+                </p>
+                <span class="badge bg-secondary mb-2">
+                    {{ counts.customers }} total
+                </span>
+                <div>
+                    <a href="{{ url_for('master_data.customers_list') }}"
+                       class="btn btn-primary btn-sm">Manage</a>
+                    <a href="{{ url_for('master_data.customers_create') }}"
+                       class="btn btn-outline-secondary btn-sm">+ New</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5 card-title">Vendors</h2>
+                <p class="card-text text-muted">
+                    Manage vendors/suppliers per business unit.
+                </p>
+                <span class="badge bg-secondary mb-2">
+                    {{ counts.vendors }} total
+                </span>
+                <div>
+                    <a href="{{ url_for('master_data.vendors_list') }}"
+                       class="btn btn-primary btn-sm">Manage</a>
+                    <a href="{{ url_for('master_data.vendors_create') }}"
+                       class="btn btn-outline-secondary btn-sm">+ New</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5 card-title">Vehicles</h2>
+                <p class="card-text text-muted">
+                    Manage vehicles/tankers and their assigned drivers.
+                </p>
+                <span class="badge bg-secondary mb-2">
+                    {{ counts.vehicles }} total
+                </span>
+                <div>
+                    <a href="{{ url_for('master_data.vehicles_list') }}"
+                       class="btn btn-primary btn-sm">Manage</a>
+                    <a href="{{ url_for('master_data.vehicles_create') }}"
+                       class="btn btn-outline-secondary btn-sm">+ New</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5 card-title">Drivers</h2>
+                <p class="card-text text-muted">
+                    Manage drivers and their details.
+                </p>
+                <span class="badge bg-secondary mb-2">
+                    {{ counts.drivers }} total
+                </span>
+                <div>
+                    <a href="{{ url_for('master_data.drivers_list') }}"
+                       class="btn btn-primary btn-sm">Manage</a>
+                    <a href="{{ url_for('master_data.drivers_create') }}"
+                       class="btn btn-outline-secondary btn-sm">+ New</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5 card-title">Cash / Bank Accounts</h2>
+                <p class="card-text text-muted">
+                    Manage cash, bank, wallet and control accounts.
+                </p>
+                <span class="badge bg-secondary mb-2">
+                    {{ counts.cash_bank_accounts }} total
+                </span>
+                <div>
+                    <a href="{{ url_for('master_data.accounts_list') }}"
+                       class="btn btn-primary btn-sm">Manage</a>
+                    <a href="{{ url_for('master_data.accounts_create') }}"
+                       class="btn btn-outline-secondary btn-sm">+ New</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5 card-title">Expense Categories</h2>
+                <p class="card-text text-muted">
+                    Manage expense categories per business unit.
+                </p>
+                <span class="badge bg-secondary mb-2">
+                    {{ counts.expense_categories }} total
+                </span>
+                <div>
+                    <a href="{{ url_for('master_data.expense_categories_list') }}"
+                       class="btn btn-primary btn-sm">Manage</a>
+                    <a href="{{ url_for('master_data.expense_categories_create') }}"
+                       class="btn btn-outline-secondary btn-sm">+ New</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

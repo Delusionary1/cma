@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {{ "Edit" if mode == "edit" else "New" }} Vehicle &middot; Master Data
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.vehicles_list') }}">Vehicles</a></li>
+        <li class="breadcrumb-item active" aria-current="page">
+            {{ "Edit" if mode == "edit" else "New" }}
+        </li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">{{ "Edit Vehicle" if mode == "edit" else "New Vehicle" }}</h1>
+
+<div class="row">
+    <div class="col-12 col-lg-8">
+        <form method="post">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="vehicle_number" class="form-label">
+                        Vehicle Number <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" class="form-control" id="vehicle_number"
+                           name="vehicle_number" value="{{ form.vehicle_number }}" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="vehicle_type" class="form-label">
+                        Vehicle Type <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="vehicle_type" name="vehicle_type" required>
+                        <option value="" disabled
+                            {{ "selected" if not form.vehicle_type else "" }}>
+                            -- Select a type --
+                        </option>
+                        {% for vt in vehicle_types %}
+                        <option value="{{ vt }}"
+                            {{ "selected" if form.vehicle_type == vt else "" }}>
+                            {{ vt }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="ownership_type" class="form-label">
+                        Ownership Type <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="ownership_type" name="ownership_type" required>
+                        <option value="" disabled
+                            {{ "selected" if not form.ownership_type else "" }}>
+                            -- Select ownership --
+                        </option>
+                        {% for ot in ownership_types %}
+                        <option value="{{ ot }}"
+                            {{ "selected" if form.ownership_type == ot else "" }}>
+                            {{ ot }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="owner_name" class="form-label">
+                        Owner Name
+                        <span class="text-muted small">(required if rented)</span>
+                    </label>
+                    <input type="text" class="form-control" id="owner_name"
+                           name="owner_name" value="{{ form.owner_name }}">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="capacity" class="form-label">Capacity</label>
+                    <input type="number" step="0.01" min="0" class="form-control"
+                           id="capacity" name="capacity" value="{{ form.capacity }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="driver_id" class="form-label">Assigned Driver</label>
+                    <select class="form-select" id="driver_id" name="driver_id">
+                        <option value="" {{ "selected" if not form.driver_id else "" }}>
+                            -- No driver --
+                        </option>
+                        {% for driver in drivers %}
+                        <option value="{{ driver.id }}"
+                            {{ "selected" if form.driver_id == driver.id else "" }}>
+                            {{ driver.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="documents_path" class="form-label">Documents Path</label>
+                <input type="text" class="form-control" id="documents_path"
+                       name="documents_path" value="{{ form.documents_path }}">
+            </div>
+
+            <div class="mb-3">
+                <label for="insurance_details" class="form-label">Insurance Details</label>
+                <textarea class="form-control" id="insurance_details"
+                          name="insurance_details" rows="2">{{ form.insurance_details }}</textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="fitness_permit_details" class="form-label">Fitness / Permit Details</label>
+                <textarea class="form-control" id="fitness_permit_details"
+                          name="fitness_permit_details" rows="2">{{ form.fitness_permit_details }}</textarea>
+            </div>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="is_active"
+                       name="is_active" {{ "checked" if form.is_active else "" }}>
+                <label class="form-check-label" for="is_active">Active</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                {{ "Save Changes" if mode == "edit" else "Create" }}
+            </button>
+            {% if mode == "edit" %}
+            <a href="{{ url_for('master_data.vehicles_view', vehicle_id=vehicle.id) }}"
+               class="btn btn-link">Cancel</a>
+            {% else %}
+            <a href="{{ url_for('master_data.vehicles_list') }}"
+               class="btn btn-link">Cancel</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}

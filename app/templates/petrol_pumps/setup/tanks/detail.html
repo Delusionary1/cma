@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tank.tank_name }} &middot; Tanks{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.setup') }}">Setup</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.tanks_list') }}">Tanks</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ tank.tank_name }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{{ tank.tank_name }}</h1>
+    <div>
+        <a href="{{ url_for('petrol_pumps.tanks_edit', tank_id=tank.id) }}" class="btn btn-outline-secondary">Edit</a>
+        <form method="post" action="{{ url_for('petrol_pumps.tanks_toggle_status', tank_id=tank.id) }}" class="d-inline">
+            {% if tank.is_active %}
+            <button type="submit" class="btn btn-outline-warning">Deactivate</button>
+            {% else %}
+            <button type="submit" class="btn btn-outline-success">Activate</button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr>
+            <th style="width: 220px;">Status</th>
+            <td>
+                {% if tank.is_active %}<span class="badge bg-success">Active</span>
+                {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+            </td>
+        </tr>
+        <tr><th>Petrol Pump</th><td>{{ tank.petrol_pump.name }}</td></tr>
+        <tr><th>Product</th><td>{{ tank.product.name }}</td></tr>
+        <tr><th>Capacity (liters)</th><td>{{ "%.2f"|format(tank.capacity_liters) if tank.capacity_liters is not none else "—" }}</td></tr>
+        <tr><th>Opening Stock (liters)</th><td>{{ "%.2f"|format(tank.opening_stock_liters) }}</td></tr>
+        <tr><th>Current Stock (liters)</th><td>{{ "%.2f"|format(tank.current_stock_liters) }}</td></tr>
+        <tr><th>Dip Reading</th><td>{{ "%.2f"|format(tank.dip_reading) if tank.dip_reading is not none else "—" }}</td></tr>
+        <tr><th>Created</th><td>{{ tank.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+    </tbody>
+</table>
+
+<a href="{{ url_for('petrol_pumps.tanks_list') }}" class="btn btn-link">&larr; Back to Tanks</a>
+{% endblock %}

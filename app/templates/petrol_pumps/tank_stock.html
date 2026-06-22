@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Tank Stock &middot; Petrol Pumps{% endblock %}
+
+{% block content %}
+{% from "petrol_pumps/_pump_lock.html" import pump_lock %}
+{% set sel_pump = (pumps|selectattr('id','equalto',filters.petrol_pump_id)|first) if filters.petrol_pump_id else None %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Tank Stock</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1">
+    <h1 class="h3 mb-0">Tank Stock{% if pump %} — {{ pump.name }}{% endif %}</h1>
+    <div>
+        <a href="{{ url_for('petrol_pumps.tank_stock', export='xlsx', **filters) }}" class="btn btn-success btn-sm">Export Excel</a>
+        <a href="{{ url_for('petrol_pumps.tank_stock', export='pdf', **filters) }}" class="btn btn-danger btn-sm">Export PDF</a>
+        <a href="{{ url_for('petrol_pumps.stock_movements_list', petrol_pump_id=filters.petrol_pump_id) }}" class="btn btn-outline-secondary btn-sm">Movements</a>
+        <a href="{{ url_for('petrol_pumps.stock_adjustments_create') }}" class="btn btn-primary btn-sm">+ Gain/Loss Adjustment</a>
+    </div>
+</div>
+<p class="text-muted">Current fuel on hand per tank. Purchases increase stock; retail sales decrease it.</p>
+
+
+{% if tanks %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Pump</th><th>Tank</th><th>Product</th>
+                <th class="text-end">Opening</th><th class="text-end">Current</th>
+                <th class="text-end">Capacity</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in tanks %}
+            <tr>
+                <td>{{ t.petrol_pump.name }}</td>
+                <td>{{ t.tank_name }}</td>
+                <td>{{ t.product.name }}</td>
+                <td class="text-end">{{ "%.2f"|format(t.opening_stock_liters) }}</td>
+                <td class="text-end fw-semibold {{ 'text-danger' if t.current_stock_liters < 0 else '' }}">{{ "%.2f"|format(t.current_stock_liters) }}</td>
+                <td class="text-end">{{ "%.2f"|format(t.capacity_liters) if t.capacity_liters is not none else "—" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td colspan="4" class="text-end">Total current stock (liters)</td>
+                <td class="text-end">{{ "%.2f"|format(total) }}</td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No active tanks found.</div>
+{% endif %}
+
+<a href="{{ url_for('petrol_pumps.index') }}" class="btn btn-link">&larr; Back to Petrol Pumps</a>
+{% endblock %}

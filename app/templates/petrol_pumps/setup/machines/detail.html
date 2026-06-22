@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}{{ machine.machine_name }} &middot; Machines{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.setup') }}">Setup</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.machines_list') }}">Machines</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ machine.machine_name }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{{ machine.machine_name }}</h1>
+    <div>
+        <a href="{{ url_for('petrol_pumps.machines_edit', machine_id=machine.id) }}" class="btn btn-outline-secondary">Edit</a>
+        <form method="post" action="{{ url_for('petrol_pumps.machines_toggle_status', machine_id=machine.id) }}" class="d-inline">
+            {% if machine.is_active %}
+            <button type="submit" class="btn btn-outline-warning">Deactivate</button>
+            {% else %}
+            <button type="submit" class="btn btn-outline-success">Activate</button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr>
+            <th style="width: 220px;">Status</th>
+            <td>
+                {% if machine.is_active %}<span class="badge bg-success">Active</span>
+                {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+            </td>
+        </tr>
+        <tr><th>Petrol Pump</th><td>{{ machine.petrol_pump.name }}</td></tr>
+        <tr><th>Machine Number</th><td>{{ machine.machine_number or "—" }}</td></tr>
+        <tr><th>Description</th><td>{{ machine.description or "—" }}</td></tr>
+        <tr><th>Created</th><td>{{ machine.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+    </tbody>
+</table>
+
+<h2 class="h5 mt-4 mb-2">Nozzles on this machine</h2>
+{% if machine.nozzles %}
+<div class="table-responsive">
+    <table class="table table-sm table-striped align-middle">
+        <thead><tr><th>Nozzle #</th><th>Product</th><th>Status</th><th class="text-end"></th></tr></thead>
+        <tbody>
+            {% for nozzle in machine.nozzles %}
+            <tr>
+                <td>{{ nozzle.nozzle_number }}</td>
+                <td>{{ nozzle.product.name }}</td>
+                <td>
+                    {% if nozzle.is_active %}<span class="badge bg-success">Active</span>
+                    {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+                </td>
+                <td class="text-end">
+                    <a href="{{ url_for('petrol_pumps.nozzles_view', nozzle_id=nozzle.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No nozzles on this machine yet.</div>
+{% endif %}
+
+<a href="{{ url_for('petrol_pumps.machines_list') }}" class="btn btn-link">&larr; Back to Machines</a>
+{% endblock %}

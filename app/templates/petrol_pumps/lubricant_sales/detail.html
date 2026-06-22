@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Lubricant Sale #{{ sale.id }} &middot; Petrol Pumps{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.lubricant_sales_list') }}">Lubricant Sales</a></li>
+        <li class="breadcrumb-item active" aria-current="page">#{{ sale.id }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Lubricant Sale #{{ sale.id }}</h1>
+    <div>
+        <a href="{{ url_for('petrol_pumps.lubricant_sales_edit', sale_id=sale.id) }}" class="btn btn-outline-secondary">Edit</a>
+        <form method="post" action="{{ url_for('petrol_pumps.lubricant_sales_toggle_status', sale_id=sale.id) }}" class="d-inline">
+            {% if sale.is_active %}<button class="btn btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-outline-success">Activate</button>{% endif %}
+        </form>
+    </div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr><th style="width:220px;">Status</th><td>{% if sale.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td></tr>
+        <tr><th>Date</th><td>{{ sale.sale_date.strftime("%Y-%m-%d") }}</td></tr>
+        <tr><th>Petrol Pump</th><td>{{ sale.petrol_pump.name }}</td></tr>
+        <tr><th>Product</th><td>{{ sale.product.name }}</td></tr>
+        <tr><th>Quantity</th><td>{{ "%.2f"|format(sale.quantity) }}</td></tr>
+        <tr><th>Rate</th><td>{{ "%.2f"|format(sale.rate) }}</td></tr>
+        <tr><th>Total Amount</th><td class="fw-bold">{{ "%.2f"|format(sale.total_amount) }}</td></tr>
+        <tr><th>Payment Method</th><td>{{ sale.payment_method }}</td></tr>
+        <tr><th>Customer</th><td>{{ sale.customer.name if sale.customer else "—" }}</td></tr>
+        <tr><th>Notes</th><td>{{ sale.notes or "—" }}</td></tr>
+        <tr><th>Created By</th><td>{{ sale.created_by.full_name if sale.created_by else "—" }}</td></tr>
+    </tbody>
+</table>
+
+<p class="text-muted small">Lubricant stock movement will be handled later in the stock module.</p>
+<a href="{{ url_for('petrol_pumps.lubricant_sales_list') }}" class="btn btn-link">&larr; Back to Lubricant Sales</a>
+{% endblock %}

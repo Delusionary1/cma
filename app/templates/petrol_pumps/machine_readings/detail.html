@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Machine Reading #{{ reading.id }} &middot; Petrol Pumps{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.machine_readings_list') }}">Machine Readings</a></li>
+        <li class="breadcrumb-item active" aria-current="page">#{{ reading.id }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Machine Reading #{{ reading.id }}</h1>
+    <div>
+        <a href="{{ url_for('petrol_pumps.machine_readings_edit', reading_id=reading.id) }}" class="btn btn-outline-secondary">Edit</a>
+        <form method="post" action="{{ url_for('petrol_pumps.machine_readings_toggle_status', reading_id=reading.id) }}" class="d-inline">
+            {% if reading.is_active %}
+            <button type="submit" class="btn btn-outline-warning">Deactivate</button>
+            {% else %}
+            <button type="submit" class="btn btn-outline-success">Activate</button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-4">
+        <div class="card text-bg-light"><div class="card-body">
+            <div class="text-muted small">Sale Liters</div>
+            <div class="h4 mb-0">{{ "%.2f"|format(reading.sale_liters) }}</div>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-bg-light"><div class="card-body">
+            <div class="text-muted small">Rate</div>
+            <div class="h4 mb-0">{{ "%.2f"|format(reading.rate) }}</div>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-bg-light"><div class="card-body">
+            <div class="text-muted small">Sale Amount</div>
+            <div class="h4 mb-0">{{ "%.2f"|format(reading.sale_amount) }}</div>
+        </div></div>
+    </div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr>
+            <th style="width: 220px;">Status</th>
+            <td>
+                {% if reading.is_active %}<span class="badge bg-success">Active</span>
+                {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+            </td>
+        </tr>
+        <tr><th>Date</th><td>{{ reading.reading_date.strftime("%Y-%m-%d") }}</td></tr>
+        <tr><th>Shift</th><td>{{ reading.shift }}</td></tr>
+        <tr><th>Petrol Pump</th><td>{{ reading.petrol_pump.name }}</td></tr>
+        <tr>
+            <th>Machine</th>
+            <td><a href="{{ url_for('petrol_pumps.machines_view', machine_id=reading.machine_id) }}">{{ reading.machine.machine_name }}</a></td>
+        </tr>
+        <tr>
+            <th>Nozzle</th>
+            <td><a href="{{ url_for('petrol_pumps.nozzles_view', nozzle_id=reading.nozzle_id) }}">{{ reading.nozzle.nozzle_number }}</a></td>
+        </tr>
+        <tr><th>Product</th><td>{{ reading.product.name }}</td></tr>
+        <tr>
+            <th>Tank Stock Effect</th>
+            <td>
+                {% if reading.stock_posted and reading.tank %}
+                <span class="badge bg-warning text-dark">−{{ "%.2f"|format(reading.sale_liters) }} L</span>
+                from <a href="{{ url_for('petrol_pumps.tanks_view', tank_id=reading.tank_id) }}">{{ reading.tank.tank_name }}</a>
+                {% else %}
+                <span class="text-muted">Not posted</span>
+                {% endif %}
+            </td>
+        </tr>
+        <tr><th>Opening Reading</th><td>{{ "%.2f"|format(reading.opening_reading) }}</td></tr>
+        <tr><th>Closing Reading</th><td>{{ "%.2f"|format(reading.closing_reading) }}</td></tr>
+        <tr><th>Notes</th><td>{{ reading.notes or "—" }}</td></tr>
+        <tr><th>Entered By</th><td>{{ reading.entered_by.full_name if reading.entered_by else "—" }}</td></tr>
+        <tr><th>Created</th><td>{{ reading.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+    </tbody>
+</table>
+
+<a href="{{ url_for('petrol_pumps.machine_readings_list') }}" class="btn btn-link">&larr; Back to Machine Readings</a>
+{% endblock %}

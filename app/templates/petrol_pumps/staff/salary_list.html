@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Salary Payments · Pump Staff{% endblock %}
+
+{% block content %}
+{% from "petrol_pumps/_pump_lock.html" import pump_lock %}
+{% set sel_pump = pump %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.staff_list') }}">Staff</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Salary Payments</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Salary &amp; Advance Payments{% if pump %} — {{ pump.name }}{% endif %}</h1>
+    <div>
+        <a href="{{ url_for('petrol_pumps.salary_report') }}" class="btn btn-outline-secondary btn-sm">Salary Report</a>
+        <a href="{{ url_for('petrol_pumps.salary_payments_list', export='xlsx', **filters) }}" class="btn btn-success btn-sm">Export Excel</a>
+        <a href="{{ url_for('petrol_pumps.salary_payments_list', export='pdf', **filters) }}" class="btn btn-danger btn-sm">Export PDF</a>
+        <a href="{{ url_for('petrol_pumps.salary_payments_create') }}" class="btn btn-primary">+ New Payment</a>
+    </div>
+</div>
+<p class="text-muted">Salaries &amp; advances are paid out of this pump's cash (like a pump expense).</p>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-2"><input type="date" name="date" value="{{ filters.date }}" class="form-control"></div>
+    <div class="col-md-2">
+        <select name="payment_type" class="form-select">
+            <option value="">All types</option>
+            {% for t in payment_types %}
+            <option value="{{ t }}" {{ "selected" if filters.payment_type == t else "" }}>{{ t }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Filter</button>
+        <a href="{{ url_for('petrol_pumps.salary_payments_list') }}" class="btn btn-link">Clear</a>
+    </div>
+</form>
+
+{% if payments %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Date</th><th>Employee</th><th>Type</th><th>For Month</th>
+                <th class="text-end">Amount</th><th>Status</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in payments %}
+            <tr class="{{ 'opacity-50' if not p.is_active }}">
+                <td>{{ p.payment_date.strftime("%Y-%m-%d") }}</td>
+                <td>{{ p.staff.employee_name }}</td>
+                <td>
+                    {% if p.payment_type == 'Advance' %}<span class="badge bg-warning text-dark">Advance</span>
+                    {% else %}<span class="badge bg-info">Salary</span>{% endif %}
+                </td>
+                <td>{{ p.for_month or "—" }}</td>
+                <td class="text-end fw-semibold">{{ "%.2f"|format(p.amount) }}</td>
+                <td>
+                    {% if p.is_active %}<span class="badge bg-success">Active</span>
+                    {% else %}<span class="badge bg-secondary">Cancelled</span>{% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ url_for('petrol_pumps.salary_payments_view', payment_id=p.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                    <a href="{{ url_for('petrol_pumps.salary_payments_edit', payment_id=p.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="post" action="{{ url_for('petrol_pumps.salary_payments_toggle_status', payment_id=p.id) }}" class="d-inline">
+                        {% if p.is_active %}
+                        <button type="submit" class="btn btn-sm btn-outline-warning">Cancel</button>
+                        {% else %}
+                        <button type="submit" class="btn btn-sm btn-outline-success">Reactivate</button>
+                        {% endif %}
+                    </form>
+                    <form method="post" action="{{ url_for('petrol_pumps.salary_payments_delete', payment_id=p.id) }}" class="d-inline"
+                          onsubmit="return confirm('Permanently delete this payment? Any balance effect is reversed.');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td colspan="4" class="text-end">Total (active)</td>
+                <td class="text-end">{{ "%.2f"|format(total) }}</td>
+                <td colspan="2"></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No salary payments found.</div>
+{% endif %}
+
+<a href="{{ url_for('petrol_pumps.staff_list') }}" class="btn btn-link">&larr; Back to Staff</a>
+{% endblock %}

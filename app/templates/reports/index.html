@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Reports &middot; Oil &amp; Gas ERP{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Reports</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Company Dashboard</h1>
+    <div>
+        <a href="{{ url_for('reports.profit_loss', **filters) }}" class="btn btn-outline-secondary btn-sm">Profit / Loss</a>
+        <a href="{{ url_for('reports.trial_balance') }}" class="btn btn-outline-secondary btn-sm">Trial Balance</a>
+        <a href="{{ url_for('reports.cash_position') }}" class="btn btn-outline-secondary btn-sm">Cash Position</a>
+        <a href="{{ url_for('reports.cash_book') }}" class="btn btn-outline-secondary btn-sm">Cash Book</a>
+        <a href="{{ url_for('reports.general_ledger') }}" class="btn btn-outline-secondary btn-sm">General Ledger</a>
+    </div>
+</div>
+
+<div class="d-flex gap-2 flex-wrap mb-3">
+    <a href="{{ url_for('reports.business_dashboard', unit='pump', **filters) }}" class="btn btn-primary btn-sm">⛽ Pump Dashboard</a>
+    <a href="{{ url_for('reports.business_dashboard', unit='bulk', **filters) }}" class="btn btn-primary btn-sm">🛢 Bulk Dashboard</a>
+    <a href="{{ url_for('reports.business_dashboard', unit='carriage', **filters) }}" class="btn btn-primary btn-sm">🚚 Carriage Dashboard</a>
+    <a href="{{ url_for('reports.business_dashboard', unit='agency', **filters) }}" class="btn btn-primary btn-sm">🏭 Agency Dashboard</a>
+    <a href="{{ url_for('reports.business_dashboard', unit='head-office', **filters) }}" class="btn btn-primary btn-sm">🏛 Head Office Dashboard</a>
+</div>
+
+<form method="get" class="row g-2 mb-4">
+    <div class="col-auto"><label class="col-form-label">From</label></div>
+    <div class="col-auto"><input type="date" name="from" value="{{ filters.from }}" class="form-control"></div>
+    <div class="col-auto"><label class="col-form-label">To</label></div>
+    <div class="col-auto"><input type="date" name="to" value="{{ filters.to }}" class="form-control"></div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Apply</button>
+        {% if filters.from or filters.to %}<a href="{{ url_for('reports.index') }}" class="btn btn-link">Clear</a>{% endif %}
+    </div>
+</form>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Cash &amp; Bank Balance</div><div class="h4">{{ "%.2f"|format(cash.total) }}</div></div></div></div>
+    <div class="col-md-3"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Combined Profit/Loss</div><div class="h4 {{ 'text-danger' if s.combined_profit < 0 else 'text-success' }}">{{ "%.2f"|format(s.combined_profit) }}</div></div></div></div>
+    <div class="col-md-3"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Receivables (customers owe)</div><div class="h4">{{ "%.2f"|format(balances.receivables) }}</div></div></div></div>
+    <div class="col-md-3"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Payables (we owe vendors)</div><div class="h4">{{ "%.2f"|format(balances.payables) }}</div></div></div></div>
+</div>
+
+<h2 class="h5 mb-2">Business-wise summary</h2>
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead><tr><th>Business</th><th class="text-end">Revenue / Income</th><th class="text-end">Cost / Expenses</th><th class="text-end">Net</th></tr></thead>
+        <tbody>
+            <tr>
+                <td>Petrol Pump Retail</td>
+                <td class="text-end">{{ "%.2f"|format(s.pump.revenue) }}</td>
+                <td class="text-end">{{ "%.2f"|format(s.pump.cogs + s.pump.expenses) }}</td>
+                <td class="text-end {{ 'text-danger' if s.pump.net < 0 else '' }}">{{ "%.2f"|format(s.pump.net) }}</td>
+            </tr>
+            <tr>
+                <td>Bulk Sale</td>
+                <td class="text-end">{{ "%.2f"|format(s.bulk.sale) }}</td>
+                <td class="text-end">{{ "%.2f"|format(s.bulk.purchase) }}</td>
+                <td class="text-end {{ 'text-danger' if s.bulk.net < 0 else '' }}">{{ "%.2f"|format(s.bulk.net) }}</td>
+            </tr>
+            <tr>
+                <td>Carriage</td>
+                <td class="text-end">{{ "%.2f"|format(s.carriage.freight) }}</td>
+                <td class="text-end">{{ "%.2f"|format(s.carriage.expenses) }}</td>
+                <td class="text-end {{ 'text-danger' if s.carriage.net < 0 else '' }}">{{ "%.2f"|format(s.carriage.net) }}</td>
+            </tr>
+            <tr>
+                <td>Oil Agencies</td>
+                <td class="text-end">{{ "%.2f"|format(s.agency.sale) }}</td>
+                <td class="text-end">—</td>
+                <td class="text-end {{ 'text-danger' if s.agency.net < 0 else '' }}">{{ "%.2f"|format(s.agency.net) }}</td>
+            </tr>
+            <tr>
+                <td>Head Office (overhead)</td>
+                <td class="text-end">—</td>
+                <td class="text-end">{{ "%.2f"|format(s.head_office.expenses + s.head_office.vendor_payments) }}</td>
+                <td class="text-end text-danger">-{{ "%.2f"|format(s.head_office.expenses + s.head_office.vendor_payments) }}</td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td colspan="3" class="text-end">Combined Profit / Loss</td>
+                <td class="text-end {{ 'text-danger' if s.combined_profit < 0 else 'text-success' }}">{{ "%.2f"|format(s.combined_profit) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<p class="text-muted small">
+    Receivables and payables are exact (from the customer/vendor ledgers). Petrol
+    pump fuel cost of goods sold is now matched to sales via weighted-average
+    costing, so the pump cost column is fuel COGS + expenses. Lubricant cost is
+    not yet captured.
+</p>
+{% endblock %}

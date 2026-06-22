@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}{{ account.name }} &middot; Cash / Bank Accounts{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.accounts_list') }}">Cash / Bank Accounts</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ account.name }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{{ account.name }}</h1>
+    <div>
+        <a href="{{ url_for('master_data.accounts_edit', account_id=account.id) }}"
+           class="btn btn-outline-secondary">Edit</a>
+        <form method="post"
+              action="{{ url_for('master_data.accounts_toggle_status', account_id=account.id) }}"
+              class="d-inline">
+            {% if account.is_active %}
+            <button type="submit" class="btn btn-outline-warning">Deactivate</button>
+            {% else %}
+            <button type="submit" class="btn btn-outline-success">Activate</button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr>
+            <th style="width: 220px;">Status</th>
+            <td>
+                {% if account.is_active %}
+                <span class="badge bg-success">Active</span>
+                {% else %}
+                <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>Business Unit</th>
+            <td>
+                {% if account.business_unit %}
+                <a href="{{ url_for('master_data.business_units_view', unit_id=account.business_unit_id) }}">
+                    {{ account.business_unit.name }}
+                </a>
+                {% else %}
+                <span class="badge bg-info text-dark">Global</span>
+                {% endif %}
+            </td>
+        </tr>
+        <tr><th>Belongs to Pump</th><td>{{ account.petrol_pump.name if account.petrol_pump else "—" }}</td></tr>
+        <tr><th>Account Type</th><td>{{ account.account_type }}</td></tr>
+        <tr><th>Account Number</th><td>{{ account.account_number or "—" }}</td></tr>
+        <tr><th>Bank Name</th><td>{{ account.bank_name or "—" }}</td></tr>
+        <tr><th>Opening Balance</th><td>{{ "%.2f"|format(account.opening_balance) }}</td></tr>
+        <tr><th>Current Balance</th><td>{{ "%.2f"|format(account.current_balance) }}</td></tr>
+        <tr><th>Created</th><td>{{ account.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+        <tr><th>Updated</th><td>{{ account.updated_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+    </tbody>
+</table>
+
+<a href="{{ url_for('master_data.accounts_list') }}" class="btn btn-link">
+    &larr; Back to Cash / Bank Accounts
+</a>
+{% endblock %}

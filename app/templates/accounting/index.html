@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Accounting &middot; Oil &amp; Gas ERP{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Accounting</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">Accounting</h1>
+
+<div class="row g-3 mb-2">
+    <div class="col-md-4"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Total Receivables (customers owe)</div><div class="h4">{{ "%.2f"|format(counts.total_receivables) }}</div></div></div></div>
+    <div class="col-md-4"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Total Payables (we owe vendors)</div><div class="h4">{{ "%.2f"|format(counts.total_payables) }}</div></div></div></div>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5 card-title">Chart of Accounts</h2>
+                <p class="card-text text-muted">
+                    Manage the accounting account tree.
+                </p>
+                <span class="badge bg-secondary mb-2">
+                    {{ counts.chart_of_accounts }} accounts
+                </span>
+                <div>
+                    <a href="{{ url_for('accounting.chart_of_accounts_list') }}"
+                       class="btn btn-primary btn-sm">Manage</a>
+                    <a href="{{ url_for('accounting.chart_of_accounts_create') }}"
+                       class="btn btn-outline-secondary btn-sm">+ New</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5 card-title">Journal Vouchers</h2>
+                <p class="card-text text-muted">
+                    Create and review manual double-entry vouchers.
+                </p>
+                <span class="badge bg-secondary mb-2">
+                    {{ counts.journal_vouchers }} entries
+                </span>
+                <div>
+                    <a href="{{ url_for('accounting.journal_vouchers_list') }}"
+                       class="btn btn-primary btn-sm">View</a>
+                    <a href="{{ url_for('accounting.journal_vouchers_create') }}"
+                       class="btn btn-outline-secondary btn-sm">+ New</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h5 card-title">Customer Receipts</h2>
+            <p class="card-text text-muted">Record money received from customers.</p>
+            <span class="badge bg-secondary mb-2">{{ counts.customer_receipts }} receipts</span>
+            <div>
+                <a href="{{ url_for('accounting.customer_receipts_list') }}" class="btn btn-primary btn-sm">View</a>
+                <a href="{{ url_for('accounting.customer_receipts_create') }}" class="btn btn-outline-secondary btn-sm">+ New</a>
+            </div>
+        </div></div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h5 card-title">Customer Ledgers</h2>
+            <p class="card-text text-muted">Receivable balances and statements.</p>
+            <a href="{{ url_for('accounting.customer_ledgers_list') }}" class="btn btn-primary btn-sm">Open</a>
+        </div></div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h5 card-title">Vendor Ledgers</h2>
+            <p class="card-text text-muted">Payable balances and statements.</p>
+            <a href="{{ url_for('accounting.vendor_ledgers_list') }}" class="btn btn-primary btn-sm">Open</a>
+        </div></div>
+    </div>
+</div>
+{% endblock %}

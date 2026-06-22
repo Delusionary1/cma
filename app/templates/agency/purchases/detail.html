@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Agency Purchase #{{ purchase.id }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('agency.index') }}">Oil Agencies</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('agency.purchases_list') }}">Purchases</a></li>
+        <li class="breadcrumb-item active" aria-current="page">#{{ purchase.id }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Agency Purchase #{{ purchase.id }}</h1>
+    <div>
+        <a href="{{ url_for('agency.purchases_edit', purchase_id=purchase.id) }}" class="btn btn-outline-secondary">Edit</a>
+        <form method="post" action="{{ url_for('agency.purchases_toggle_status', purchase_id=purchase.id) }}" class="d-inline">
+            {% if purchase.is_active %}<button class="btn btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-outline-success">Activate</button>{% endif %}
+        </form>
+    </div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr><th style="width:220px;">Status</th><td>{% if purchase.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td></tr>
+        <tr><th>Date</th><td>{{ purchase.purchase_date.strftime("%Y-%m-%d") }}</td></tr>
+        <tr><th>Vendor</th><td>{{ purchase.vendor.name }}</td></tr>
+        <tr><th>Product</th><td>{{ purchase.product.name }}</td></tr>
+        <tr><th>Quantity</th><td>{{ "%.2f"|format(purchase.quantity) }}</td></tr>
+        <tr><th>Purchase Rate</th><td>{{ "%.2f"|format(purchase.purchase_rate) }}</td></tr>
+        <tr><th>Total Amount</th><td class="fw-bold">{{ "%.2f"|format(purchase.total_amount) }}</td></tr>
+        <tr><th>Invoice Number</th><td>{{ purchase.invoice_number or "—" }}</td></tr>
+        <tr><th>Delivery Method</th><td>{{ purchase.delivery_method or "—" }}</td></tr>
+        <tr><th>Loading Point</th><td>{{ purchase.loading_point or "—" }}</td></tr>
+        <tr><th>Vehicle / Driver</th><td>{{ purchase.vehicle_number or "—" }} / {{ purchase.driver_name or "—" }}</td></tr>
+        <tr><th>Payment Status</th><td>{{ purchase.payment_status }}</td></tr>
+        <tr><th>Notes</th><td>{{ purchase.notes or "—" }}</td></tr>
+        <tr><th>Created By</th><td>{{ purchase.created_by.full_name if purchase.created_by else "—" }}</td></tr>
+    </tbody>
+</table>
+
+{% import "_attachments.html" as att with context %}
+{{ att.panel('agency_purchase', purchase.id, 'Invoices &amp; Documents') }}
+
+<a href="{{ url_for('agency.purchases_list') }}" class="btn btn-link">&larr; Back to Purchases</a>
+{% endblock %}

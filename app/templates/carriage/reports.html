@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Carriage Reports · CMA &amp; Co.{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('carriage.index') }}">Carriage</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Reports</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Carriage Profit / Loss</h1>
+    <div>
+        <a href="{{ url_for('carriage.reports', export='xlsx', **filters) }}" class="btn btn-success btn-sm">Export Excel</a>
+        <a href="{{ url_for('carriage.reports', export='pdf', **filters) }}" class="btn btn-danger btn-sm">Export PDF</a>
+    </div>
+</div>
+<p class="text-muted">Which vehicle and driver are profitable or loss-making, plus delivery (trip-type) and rented-vehicle payable breakdowns (BRD §13.3 / §8.7).</p>
+
+<form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-auto"><label class="form-label">From</label><input type="date" name="from" value="{{ filters.from }}" class="form-control"></div>
+    <div class="col-auto"><label class="form-label">To</label><input type="date" name="to" value="{{ filters.to }}" class="form-control"></div>
+    <div class="col-auto"><button class="btn btn-outline-secondary">Apply</button>
+        {% if filters.from or filters.to %}<a href="{{ url_for('carriage.reports') }}" class="btn btn-link">Clear</a>{% endif %}
+    </div>
+</form>
+
+{% macro pl_table(title, data, key) %}
+<h2 class="h5 mb-2">{{ title }}</h2>
+{% if data.rows %}
+<div class="table-responsive mb-4">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr><th>{{ key }}</th><th>Type</th><th class="text-center">Trips</th><th class="text-end">Freight</th><th class="text-end">Expenses</th><th class="text-end">Net Profit</th></tr>
+        </thead>
+        <tbody>
+            {% for r in data.rows %}
+            <tr>
+                <td class="fw-semibold">{{ r.label }}</td>
+                <td><span class="text-muted small">{{ r.ownership or "—" }}</span></td>
+                <td class="text-center">{{ r.trips }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.freight) }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.expenses) }}</td>
+                <td class="text-end fw-semibold {{ 'text-danger' if r.net < 0 else 'text-success' }}">{{ "%.2f"|format(r.net) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td colspan="2" class="text-end">Total</td>
+                <td class="text-center">{{ data.totals.trips }}</td>
+                <td class="text-end">{{ "%.2f"|format(data.totals.freight) }}</td>
+                <td class="text-end">{{ "%.2f"|format(data.totals.expenses) }}</td>
+                <td class="text-end {{ 'text-danger' if data.totals.net < 0 else 'text-success' }}">{{ "%.2f"|format(data.totals.net) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No trips in this period.</div>
+{% endif %}
+{% endmacro %}
+
+{{ pl_table("Vehicle-wise", vehicles, "Vehicle") }}
+{{ pl_table("Driver-wise", drivers, "Driver") }}
+{{ pl_table("Delivery Report (by trip type)", delivery, "Trip Type") }}
+
+<h2 class="h5 mb-2">Carriage Expense Breakdown (by category)</h2>
+{% if expenses.totals.amount %}
+<div class="table-responsive mb-4">
+    <table class="table table-striped align-middle">
+        <thead><tr><th>Category</th><th class="text-center">Trips</th><th class="text-end">Amount</th></tr></thead>
+        <tbody>
+            {% for r in expenses.rows %}
+            <tr><td class="fw-semibold">{{ r.label }}</td><td class="text-center">{{ r.trips }}</td><td class="text-end">{{ "%.2f"|format(r.amount) }}</td></tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold"><td class="text-end">Total expenses</td><td class="text-center">{{ expenses.totals.trips }}</td><td class="text-end">{{ "%.2f"|format(expenses.totals.amount) }}</td></tr>
+        </tfoot>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No carriage expenses in this period.</div>
+{% endif %}
+
+<h2 class="h5 mb-2">Rented Vehicle Payable</h2>
+{% if rented.rows %}
+<div class="table-responsive mb-4">
+    <table class="table table-striped align-middle">
+        <thead><tr><th>Provider (Vendor)</th><th class="text-center">Trips</th><th class="text-end">Rent Payable</th></tr></thead>
+        <tbody>
+            {% for r in rented.rows %}
+            <tr><td class="fw-semibold">{{ r.label }}</td><td class="text-center">{{ r.trips }}</td><td class="text-end {{ 'text-danger' if r.rent > 0 }}">{{ "%.2f"|format(r.rent) }}</td></tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold"><td class="text-end">Total</td><td class="text-center">{{ rented.totals.trips }}</td><td class="text-end">{{ "%.2f"|format(rented.totals.rent) }}</td></tr>
+        </tfoot>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No rented-vehicle trips with rent in this period.</div>
+{% endif %}
+
+<a href="{{ url_for('carriage.index') }}" class="btn btn-link">&larr; Back to Carriage</a>
+{% endblock %}

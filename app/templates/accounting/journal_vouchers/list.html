@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Journal Vouchers &middot; Accounting{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('accounting.index') }}">Accounting</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Journal Vouchers</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Journal Vouchers</h1>
+    <a href="{{ url_for('accounting.journal_vouchers_create') }}"
+       class="btn btn-primary">+ New Journal Voucher</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-3">
+        <input type="text" name="q" value="{{ q }}" class="form-control"
+               placeholder="Voucher number...">
+    </div>
+    <div class="col-md-3">
+        <select name="business_unit_id" class="form-select">
+            <option value="">All business units</option>
+            {% for unit in business_units %}
+            <option value="{{ unit.id }}"
+                {{ "selected" if bu_id == unit.id|string else "" }}>
+                {{ unit.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <input type="date" name="date" value="{{ entry_date }}" class="form-control">
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Filter</button>
+        {% if q or bu_id or entry_date %}
+        <a href="{{ url_for('accounting.journal_vouchers_list') }}"
+           class="btn btn-link">Clear</a>
+        {% endif %}
+    </div>
+</form>
+
+{% if entries %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Voucher #</th>
+                <th>Business Unit</th>
+                <th>Description</th>
+                <th class="text-end">Debit</th>
+                <th class="text-end">Credit</th>
+                <th>Posted</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in entries %}
+            <tr>
+                <td>{{ entry.entry_date.strftime("%Y-%m-%d") }}</td>
+                <td>{{ entry.voucher.voucher_number if entry.voucher else "—" }}</td>
+                <td>{{ entry.business_unit.name if entry.business_unit else "—" }}</td>
+                <td>{{ entry.description or "—" }}</td>
+                <td class="text-end">{{ "%.2f"|format(entry.total_debit) }}</td>
+                <td class="text-end">{{ "%.2f"|format(entry.total_credit) }}</td>
+                <td>
+                    {% if entry.is_posted %}
+                    <span class="badge bg-success">Posted</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Draft</span>
+                    {% endif %}
+                </td>
+                <td class="text-end">
+                    <a href="{{ url_for('accounting.journal_vouchers_view', entry_id=entry.id) }}"
+                       class="btn btn-sm btn-outline-primary">View</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No journal vouchers found.</div>
+{% endif %}
+
+<a href="{{ url_for('accounting.index') }}" class="btn btn-link">&larr; Back to Accounting</a>
+{% endblock %}

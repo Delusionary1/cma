@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}{{ account.code }} {{ account.name }} &middot; Accounting{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('accounting.index') }}">Accounting</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('accounting.chart_of_accounts_list') }}">Chart of Accounts</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ account.code }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{{ account.code }} - {{ account.name }}</h1>
+    <div>
+        <a href="{{ url_for('accounting.chart_of_accounts_edit', account_id=account.id) }}"
+           class="btn btn-outline-secondary">Edit</a>
+        <form method="post"
+              action="{{ url_for('accounting.chart_of_accounts_toggle_status', account_id=account.id) }}"
+              class="d-inline">
+            {% if account.is_active %}
+            <button type="submit" class="btn btn-outline-warning">Deactivate</button>
+            {% else %}
+            <button type="submit" class="btn btn-outline-success">Activate</button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr>
+            <th style="width: 220px;">Status</th>
+            <td>
+                {% if account.is_active %}
+                <span class="badge bg-success">Active</span>
+                {% else %}
+                <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+            </td>
+        </tr>
+        <tr><th>Code</th><td><code>{{ account.code }}</code></td></tr>
+        <tr><th>Account Type</th><td>{{ account.account_type }}</td></tr>
+        <tr>
+            <th>Business Unit</th>
+            <td>{{ account.business_unit.name if account.business_unit else "Global" }}</td>
+        </tr>
+        <tr>
+            <th>Parent Account</th>
+            <td>
+                {% if account.parent %}
+                <a href="{{ url_for('accounting.chart_of_accounts_view', account_id=account.parent_id) }}">
+                    {{ account.parent.code }} - {{ account.parent.name }}
+                </a>
+                {% else %}—{% endif %}
+            </td>
+        </tr>
+        <tr><th>Created</th><td>{{ account.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+        <tr><th>Updated</th><td>{{ account.updated_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+    </tbody>
+</table>
+
+{% if account.children %}
+<h2 class="h5 mt-4 mb-2">Child accounts</h2>
+<ul>
+    {% for child in account.children %}
+    <li>
+        <a href="{{ url_for('accounting.chart_of_accounts_view', account_id=child.id) }}">
+            {{ child.code }} - {{ child.name }}
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<a href="{{ url_for('accounting.chart_of_accounts_list') }}" class="btn btn-link">
+    &larr; Back to Chart of Accounts
+</a>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "reports/dashboards/_base.html" %}
+{% import "reports/dashboards/_macros.html" as w %}
+
+{% block dash %}
+<div class="dgrid">
+    {{ w.kpi("Cash in Hand", d.cash_total, "#F5A524") }}
+    {{ w.kpi("Bank Balance", d.bank_total, "#1D4ED8") }}
+    {{ w.kpi("Wallets", d.wallet_total, "#0E7490") }}
+    {{ w.kpi("Receivables", d.balances.receivables, "#15803D") }}
+    {{ w.kpi("Payables", d.balances.payables, "#BE123C") }}
+    {{ w.kpi("Combined Profit / Loss", d.combined.combined_profit, "#6D4FC2") }}
+</div>
+
+<div class="dpanel">
+    <h2>Business-wise Net</h2>
+    <div class="table-responsive">
+        <table class="table table-striped align-middle mb-0">
+            <thead><tr><th>Business</th><th class="text-end">Revenue / Income</th><th class="text-end">Net</th></tr></thead>
+            <tbody>
+                <tr><td>Petrol Pump Retail</td><td class="text-end">{{ "%.2f"|format(d.combined.pump.revenue) }}</td><td class="text-end {{ 'text-danger' if d.combined.pump.net < 0 }}">{{ "%.2f"|format(d.combined.pump.net) }}</td></tr>
+                <tr><td>Bulk Sale</td><td class="text-end">{{ "%.2f"|format(d.combined.bulk.sale) }}</td><td class="text-end {{ 'text-danger' if d.combined.bulk.net < 0 }}">{{ "%.2f"|format(d.combined.bulk.net) }}</td></tr>
+                <tr><td>Carriage</td><td class="text-end">{{ "%.2f"|format(d.combined.carriage.freight) }}</td><td class="text-end {{ 'text-danger' if d.combined.carriage.net < 0 }}">{{ "%.2f"|format(d.combined.carriage.net) }}</td></tr>
+                <tr><td>Oil Agency</td><td class="text-end">{{ "%.2f"|format(d.combined.agency.sale) }}</td><td class="text-end {{ 'text-danger' if d.combined.agency.net < 0 }}">{{ "%.2f"|format(d.combined.agency.net) }}</td></tr>
+                <tr><td>Head Office (overhead)</td><td class="text-end">—</td><td class="text-end text-danger">-{{ "%.2f"|format(d.head_office.expenses + d.head_office.vendor_payments) }}</td></tr>
+            </tbody>
+            <tfoot>
+                <tr class="table-light fw-bold"><td colspan="2" class="text-end">Combined</td><td class="text-end {{ 'text-danger' if d.combined.combined_profit < 0 else 'text-success' }}">{{ "%.2f"|format(d.combined.combined_profit) }}</td></tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endblock %}

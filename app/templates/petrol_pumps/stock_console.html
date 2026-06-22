@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Console · Petrol Pumps{% endblock %}
+
+{% block content %}
+<style>
+/* ============ STOCK CONSOLE (scoped) ============ */
+.sc-wrap{position:relative;border-radius:22px;overflow:hidden;
+    background:linear-gradient(150deg,#0C1017,#121823 55%,#161E2B);
+    border:1px solid rgba(255,255,255,.08);padding:26px 28px 30px;color:#E8EBF0;}
+.sc-wrap::before{content:"";position:absolute;right:-160px;top:-180px;width:480px;height:480px;border-radius:50%;
+    background:radial-gradient(circle,rgba(51,214,200,.14),transparent 65%);pointer-events:none;}
+.sc-wrap::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+    background-size:46px 46px;mask-image:radial-gradient(ellipse 80% 90% at 20% 10%,#000 25%,transparent 75%);}
+.sc-wrap>*{position:relative;z-index:1}
+
+.sc-eyebrow{font-family:var(--fm);font-size:10.5px;letter-spacing:.26em;color:#5FE6D6;text-transform:uppercase;
+    display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sc-eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:#33D6C8;box-shadow:0 0 10px #33D6C8}
+.sc-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.sc-head h1{font-family:var(--fl);color:#fff;font-size:26px;margin:0;letter-spacing:.01em}
+.sc-head h1 b{color:#5FE6D6}
+
+.sc-pumps{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;
+    background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:8px}
+.sc-pump{display:flex;align-items:center;gap:10px;text-decoration:none;
+    padding:11px 20px;border-radius:11px;color:#B9C2D0;font-weight:600;font-size:13.5px;
+    transition:all .3s var(--ease);border:1px solid transparent}
+.sc-pump svg{width:17px;height:17px;flex-shrink:0}
+.sc-pump:hover{background:rgba(255,255,255,.06);color:#fff}
+.sc-pump.on{background:linear-gradient(92deg,#33D6C8,#1FB3C4 60%,#1597B8);color:#04201F;
+    box-shadow:0 6px 20px rgba(51,214,200,.4)}
+
+/* date range bar */
+.sc-range{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:26px;
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 16px}
+.sc-range .f label{display:block;font-family:var(--fm);font-size:9px;letter-spacing:.16em;color:#9AA4B6;text-transform:uppercase;margin-bottom:6px}
+.sc-range input{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;
+    color:#F4F6F9;padding:9px 12px;font-size:13.5px;font-family:var(--fb);outline:none;color-scheme:dark}
+.sc-range input:focus{border-color:rgba(51,214,200,.6);box-shadow:0 0 0 4px rgba(51,214,200,.12)}
+.sc-range .btn-go{border:0;border-radius:10px;padding:10px 20px;font-weight:700;color:#04201F;cursor:pointer;
+    background:linear-gradient(92deg,#33D6C8,#1FB3C4);box-shadow:0 5px 16px rgba(51,214,200,.35)}
+.sc-range .quick{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.sc-range .quick a{font-family:var(--fm);font-size:10px;letter-spacing:.06em;color:#9AA4B6;text-decoration:none;
+    border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:7px 11px;transition:all .25s}
+.sc-range .quick a:hover{color:#fff;border-color:rgba(51,214,200,.5)}
+
+/* tank cards */
+.sc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+.sc-tank{position:relative;border-radius:18px;cursor:pointer;
+    background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.10);
+    padding:20px;transition:transform .35s var(--ease),border-color .3s,box-shadow .35s;
+    opacity:0;transform:translateY(16px);animation:scIn .6s var(--ease) forwards}
+@keyframes scIn{to{opacity:1;transform:none}}
+.sc-tank:hover{transform:translateY(-5px);border-color:var(--tc,#33D6C8);
+    box-shadow:0 18px 44px rgba(0,0,0,.45),0 0 30px color-mix(in srgb,var(--tc,#33D6C8) 22%,transparent)}
+.sc-t-top{display:flex;gap:14px;align-items:center}
+.sc-t-svg{flex-shrink:0;filter:drop-shadow(0 8px 16px rgba(0,0,0,.5))}
+.sc-t-meta h3{font-family:var(--fd);font-size:16px;font-weight:700;color:#fff;margin:0 0 2px}
+.sc-t-meta .prod{font-family:var(--fm);font-size:9.5px;letter-spacing:.16em;color:var(--tc,#5FE6D6);text-transform:uppercase}
+.sc-cur{margin-top:14px;display:flex;align-items:baseline;gap:6px}
+.sc-cur .v{font-family:var(--fd);font-weight:700;font-size:26px;color:#fff;line-height:1}
+.sc-cur .u{font-family:var(--fm);font-size:11px;color:#8C96A8}
+.sc-cur .cap{margin-left:auto;font-family:var(--fm);font-size:10px;color:#8C96A8}
+.sc-bar{height:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:9px}
+.sc-bar span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--tc,#33D6C8),color-mix(in srgb,var(--tc,#33D6C8) 55%,#fff));
+    box-shadow:0 0 10px var(--tc,#33D6C8);width:0;transition:width 1s var(--ease) .2s}
+.sc-flow{display:flex;gap:8px;margin-top:14px}
+.sc-flow div{flex:1;border-radius:11px;padding:9px 11px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04)}
+.sc-flow .lab{font-family:var(--fm);font-size:8px;letter-spacing:.14em;color:#8C96A8;text-transform:uppercase}
+.sc-flow .num{font-family:var(--fd);font-weight:700;font-size:14px;margin-top:3px}
+.sc-flow .in .num{color:#5FE6A2}.sc-flow .out .num{color:#FFB07A}
+.sc-cta{margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:11px;padding:9px;
+    font-weight:700;font-size:12px;letter-spacing:.04em;background:rgba(51,214,200,.12);border:1px solid rgba(51,214,200,.35);color:#5FE6D6;transition:all .3s var(--ease)}
+.sc-tank:hover .sc-cta{background:linear-gradient(92deg,#33D6C8,#1FB3C4);color:#04201F}
+.sc-cta svg{width:14px;height:14px}
+
+.sc-empty{padding:46px 20px;text-align:center;color:#9AA4B6;font-size:14px;
+    background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.15);border-radius:16px}
+.sc-empty a{color:#5FE6D6;font-weight:600}
+
+/* modal */
+.scm-back{position:fixed;inset:0;z-index:1990;background:rgba(5,7,10,.74);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .3s}
+.scm-back.open{opacity:1;pointer-events:auto}
+.scm{position:fixed;z-index:2000;left:50%;top:50%;width:min(720px,calc(100vw - 28px));max-height:calc(100vh - 40px);overflow:auto;
+    transform:translate(-50%,-46%) scale(.96);opacity:0;pointer-events:none;
+    background:linear-gradient(160deg,#10151E,#151C28);border:1px solid rgba(255,255,255,.12);
+    border-radius:22px;box-shadow:0 40px 90px rgba(0,0,0,.6);color:#E8EBF0;transition:transform .35s var(--ease),opacity .3s}
+.scm.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+.scm-h{display:flex;align-items:center;gap:14px;padding:22px 26px 0}
+.scm-h .ic{width:46px;height:46px;border-radius:13px;flex-shrink:0;display:grid;place-items:center;
+    background:linear-gradient(92deg,#33D6C8,#1FB3C4);box-shadow:0 0 24px rgba(51,214,200,.45)}
+.scm-h .ic svg{width:24px;height:24px}
+.scm-h h2{font-family:var(--fl);font-size:21px;color:#fff;margin:0;line-height:1.2}
+.scm-h small{display:block;font-family:var(--fm);font-size:10px;letter-spacing:.14em;color:#9AA4B6;text-transform:uppercase;margin-top:3px}
+.scm-x{margin-left:auto;background:none;border:none;color:#8C96A8;font-size:26px;line-height:1;cursor:pointer;padding:4px 8px}
+.scm-x:hover{color:#fff}
+.scm-body{padding:18px 26px 24px}
+.scm-stat{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.scm-stat div{flex:1;min-width:110px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:11px 13px}
+.scm-stat .l{font-family:var(--fm);font-size:8.5px;letter-spacing:.14em;color:#8C96A8;text-transform:uppercase}
+.scm-stat .n{font-family:var(--fd);font-weight:700;font-size:17px;color:#fff;margin-top:3px}
+.scm-lab{font-family:var(--fm);font-size:9.5px;letter-spacing:.18em;color:#8C96A8;text-transform:uppercase;margin:16px 0 9px;
+    display:flex;align-items:center;gap:10px}
+.scm-lab::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(255,255,255,.12),transparent)}
+.scm-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.scm-tbl th{font-family:var(--fm);font-size:8.5px;letter-spacing:.12em;color:#8C96A8;text-transform:uppercase;text-align:left;padding:7px 9px;border-bottom:1px solid rgba(255,255,255,.10)}
+.scm-tbl td{padding:8px 9px;border-bottom:1px solid rgba(255,255,255,.05);color:#D7DCE5}
+.scm-tbl td.r,.scm-tbl th.r{text-align:right}
+.mv-badge{font-family:var(--fm);font-size:9px;letter-spacing:.04em;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.mv-in{background:rgba(95,230,162,.14);color:#7CEBAF}
+.mv-out{background:rgba(255,176,122,.14);color:#FFC093}
+.mv-gain{background:rgba(51,214,200,.14);color:#7FE9DE}
+.mv-loss{background:rgba(255,107,107,.14);color:#FF9D9D}
+.qty-pos{color:#7CEBAF;font-family:var(--fm)}.qty-neg{color:#FFB07A;font-family:var(--fm)}
+.scm-none{color:#8C96A8;font-size:12.5px;padding:10px 2px}
+.scm-foot{margin-top:18px;display:flex;justify-content:flex-end;gap:10px}
+.scm-gl{border:0;border-radius:11px;padding:11px 18px;font-weight:700;font-size:13px;color:#16110A;text-decoration:none;
+    background:linear-gradient(92deg,#FFC857,#F5A524 60%,#FF8A1E);box-shadow:0 6px 18px rgba(245,165,36,.35)}
+.st-pill{font-family:var(--fm);font-size:9px;padding:3px 8px;border-radius:999px}
+.st-Approved{background:rgba(61,220,132,.14);color:#7CEBAF}
+.st-Pending{background:rgba(245,165,36,.14);color:#FFC857}
+.st-Rejected{background:rgba(255,107,107,.14);color:#FF9D9D}
+@media(prefers-reduced-motion:reduce){.sc-tank{opacity:1!important;transform:none!important}.sc-bar span{transition:none!important}}
+</style>
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Stock Console</li>
+    </ol>
+</nav>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+    <linearGradient id="scTank" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#33405A"/><stop offset=".5" stop-color="#27324A"/><stop offset="1" stop-color="#1B2438"/></linearGradient>
+</defs></svg>
+
+<div class="sc-wrap">
+    <div class="sc-head">
+        <div>
+            <div class="sc-eyebrow">Petrol Pump · Tank Stock &amp; Movement</div>
+            <h1>Stock <b>Console</b></h1>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{{ url_for('petrol_pumps.stock_movements_list') }}" class="btn btn-outline-secondary btn-sm">Full Ledger</a>
+            <a href="{{ url_for('petrol_pumps.stock_adjustments_list') }}" class="btn btn-outline-secondary btn-sm">Gain/Loss</a>
+        </div>
+    </div>
+
+    {% if pumps %}
+    <div class="sc-pumps">
+        <span class="sc-pump on">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16M4 21h11M15 9h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V9.5L19 7"/><path d="M7 7h5v4H7z"/></svg>
+            {{ pump.name if pump }}
+        </span>
+        <a class="sc-pump" href="{{ url_for('petrol_pumps.index', pump=pump.id if pump else None) }}"
+           style="margin-left:auto">Change pump &rsaquo;</a>
+    </div>
+
+    <form class="sc-range" method="get">
+        <input type="hidden" name="pump" value="{{ pump.id if pump }}">
+        <div class="f"><label>From</label><input type="date" name="from" value="{{ date_from.isoformat() }}"></div>
+        <div class="f"><label>To</label><input type="date" name="to" value="{{ date_to.isoformat() }}"></div>
+        <button class="btn-go" type="submit">Apply</button>
+        <div class="quick">
+            <a href="{{ url_for('petrol_pumps.stock_console', pump=pump.id if pump, from=today.isoformat(), to=today.isoformat()) }}">Today</a>
+            <a href="{{ url_for('petrol_pumps.stock_console', pump=pump.id if pump, from=today.replace(day=1).isoformat(), to=today.isoformat()) }}">This month</a>
+        </div>
+    </form>
+
+    {% if tanks %}
+    <div class="sc-grid">
+        {% for tk in tanks %}
+        {% set t = tk.t %}
+        {% set pname = t.product.name|lower %}
+        {% set tc = '#F5A524' if 'petrol' in pname else ('#33D6C8' if 'diesel' in pname else ('#9B7FE8' if 'octane' in pname else '#33D6C8')) %}
+        <div class="sc-tank" style="--tc:{{ tc }}" role="button" tabindex="0" data-modal="scm-{{ t.id }}">
+            <div class="sc-t-top">
+                <svg class="sc-t-svg" width="58" height="58" viewBox="0 0 80 80" fill="none">
+                    <rect x="10" y="22" width="60" height="40" rx="20" fill="url(#scTank)" stroke="rgba(255,255,255,.14)"/>
+                    <ellipse cx="10" cy="42" rx="7" ry="20" fill="#1B2438" stroke="rgba(255,255,255,.10)"/>
+                    <ellipse cx="70" cy="42" rx="7" ry="20" fill="#2B3850"/>
+                    <rect x="24" y="36" width="42" height="14" rx="5" fill="{{ tc }}" opacity=".9"/>
+                    <rect x="34" y="10" width="14" height="14" rx="4" fill="#26324A" stroke="rgba(255,255,255,.12)"/>
+                </svg>
+                <div class="sc-t-meta">
+                    <h3>{{ t.tank_name }}</h3>
+                    <span class="prod">{{ t.product.name }}</span>
+                </div>
+            </div>
+            <div class="sc-cur">
+                <span class="v">{{ '{:,.0f}'.format(tk.current) }}</span><span class="u">L in tank</span>
+                {% if t.capacity_liters %}<span class="cap">/ {{ '{:,.0f}'.format(t.capacity_liters) }} L</span>{% endif %}
+            </div>
+            {% if t.capacity_liters %}<div class="sc-bar"><span data-w="{{ tk.fill_pct }}"></span></div>{% endif %}
+            <div class="sc-flow">
+                <div class="in"><div class="lab">In (range)</div><div class="num">+{{ '{:,.0f}'.format(tk.total_in) }}</div></div>
+                <div class="out"><div class="lab">Out (range)</div><div class="num">−{{ '{:,.0f}'.format(tk.total_out) }}</div></div>
+            </div>
+            <div class="sc-cta">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                View Movements
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {# ---- one modal per tank ---- #}
+    {% for tk in tanks %}
+    {% set t = tk.t %}
+    <div class="scm-back" data-back="scm-{{ t.id }}"></div>
+    <div class="scm" id="scm-{{ t.id }}" role="dialog" aria-modal="true">
+        <div class="scm-h">
+            <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#04201F" stroke-width="2"><rect x="3" y="7" width="14" height="10" rx="5"/><path d="M17 10h2l2 2v3"/></svg></span>
+            <div><h2>{{ t.tank_name }}</h2><small>{{ pump.name }} · {{ t.product.name }} · {{ date_from.strftime("%d %b") }} – {{ date_to.strftime("%d %b %Y") }}</small></div>
+            <button type="button" class="scm-x" data-close aria-label="Close">×</button>
+        </div>
+        <div class="scm-body">
+            <div class="scm-stat">
+                <div><div class="l">In Tank Now</div><div class="n">{{ '{:,.0f}'.format(tk.current) }} L</div></div>
+                <div><div class="l">Received (range)</div><div class="n" style="color:#7CEBAF">+{{ '{:,.0f}'.format(tk.total_in) }}</div></div>
+                <div><div class="l">Out (range)</div><div class="n" style="color:#FFB07A">−{{ '{:,.0f}'.format(tk.total_out) }}</div></div>
+                {% if t.capacity_liters %}<div><div class="l">Capacity</div><div class="n">{{ '{:,.0f}'.format(t.capacity_liters) }} L</div></div>{% endif %}
+            </div>
+
+            <div class="scm-lab">Movement Ledger</div>
+            {% if tk.moves %}
+            <table class="scm-tbl">
+                <thead><tr><th>Date</th><th>Type</th><th class="r">Quantity (L)</th><th>Note</th></tr></thead>
+                <tbody>
+                    {% for m in tk.moves %}
+                    {% set q = m.quantity_liters or 0 %}
+                    <tr>
+                        <td>{{ m.movement_date.strftime("%Y-%m-%d") }}</td>
+                        <td>
+                            {% if m.movement_type == MOVEMENT_PURCHASE_RECEIVED %}<span class="mv-badge mv-in">Purchase</span>
+                            {% elif m.movement_type == MOVEMENT_RETAIL_SALE %}<span class="mv-badge mv-out">Retail Sale</span>
+                            {% elif m.movement_type == MOVEMENT_STOCK_GAIN %}<span class="mv-badge mv-gain">Gain</span>
+                            {% elif m.movement_type == MOVEMENT_STOCK_LOSS %}<span class="mv-badge mv-loss">Loss</span>
+                            {% else %}<span class="mv-badge mv-in">{{ m.movement_type }}</span>{% endif %}
+                        </td>
+                        <td class="r {{ 'qty-pos' if q > 0 else 'qty-neg' }}">{{ '{:+,.2f}'.format(q) }}</td>
+                        <td><span class="text-muted" style="font-size:11px">{{ m.notes or '' }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="scm-none">No movements in this date range.</div>
+            {% endif %}
+
+            <div class="scm-lab">Gain / Loss Adjustments</div>
+            {% if tk.adjustments %}
+            <table class="scm-tbl">
+                <thead><tr><th>Date</th><th class="r">System</th><th class="r">Physical</th><th class="r">Difference</th><th>Status</th></tr></thead>
+                <tbody>
+                    {% for a in tk.adjustments %}
+                    <tr>
+                        <td>{{ a.adjustment_date.strftime("%Y-%m-%d") }}</td>
+                        <td class="r">{{ '{:,.2f}'.format(a.system_stock_liters) }}</td>
+                        <td class="r">{{ '{:,.2f}'.format(a.physical_stock_liters) }}</td>
+                        <td class="r {{ 'qty-pos' if a.difference_liters > 0 else 'qty-neg' }}">{{ '{:+,.2f}'.format(a.difference_liters) }}</td>
+                        <td><span class="st-pill st-{{ a.status }}">{{ a.status }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="scm-none">No gain/loss recorded in this range.</div>
+            {% endif %}
+
+            <div class="scm-foot">
+                <a class="scm-gl" href="{{ url_for('petrol_pumps.stock_adjustments_create', pump=pump.id, tank=t.id) }}">+ Record Gain / Loss</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="sc-empty">No active tanks for <b>{{ pump.name if pump }}</b> —
+        <a href="{{ url_for('petrol_pumps.setup') }}">add tanks in Pump Setup</a>.</div>
+    {% endif %}
+    {% else %}
+    <div class="sc-empty">No active petrol pumps. <a href="{{ url_for('master_data.index') }}">Add a pump in Master Data</a>.</div>
+    {% endif %}
+</div>
+
+<script>
+(function(){
+"use strict";
+function openModal(id){
+    var m=document.getElementById(id),b=document.querySelector('[data-back="'+id+'"]');
+    if(!m)return;m.classList.add("open");if(b)b.classList.add("open");
+}
+function closeAll(){
+    document.querySelectorAll(".scm.open,.scm-back.open").forEach(function(e){e.classList.remove("open")});
+}
+document.querySelectorAll(".sc-tank").forEach(function(card){
+    card.addEventListener("click",function(){openModal(card.dataset.modal)});
+    card.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();openModal(card.dataset.modal)}});
+});
+document.querySelectorAll(".scm-back").forEach(function(b){b.addEventListener("click",closeAll)});
+document.querySelectorAll("[data-close]").forEach(function(x){x.addEventListener("click",closeAll)});
+document.addEventListener("keydown",function(e){if(e.key==="Escape")closeAll()});
+/* animate fill bars */
+requestAnimationFrame(function(){
+    document.querySelectorAll(".sc-bar span").forEach(function(s){s.style.width=(s.dataset.w||0)+"%"});
+});
+})();
+</script>
+{% endblock %}

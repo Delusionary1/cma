@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Complaint #{{ complaint.id }} · Maintenance{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.maintenance_list') }}">Maintenance</a></li>
+        <li class="breadcrumb-item active" aria-current="page">#{{ complaint.id }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">{{ complaint.complaint_type }} — {{ complaint.petrol_pump.name }}</h1>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+        {% for s in statuses %}
+        {% if s != complaint.status %}
+        <form method="post" action="{{ url_for('petrol_pumps.maintenance_set_status', complaint_id=complaint.id) }}" class="d-inline">
+            <input type="hidden" name="status" value="{{ s }}">
+            <button type="submit" class="btn btn-sm
+                {%- if s == 'Completed' %} btn-success
+                {%- elif s == 'In Progress' %} btn-info
+                {%- else %} btn-outline-secondary{% endif %}">Mark {{ s }}</button>
+        </form>
+        {% endif %}
+        {% endfor %}
+        <a href="{{ url_for('petrol_pumps.maintenance_edit', complaint_id=complaint.id) }}" class="btn btn-outline-secondary">Edit</a>
+        <form method="post" action="{{ url_for('petrol_pumps.maintenance_delete', complaint_id=complaint.id) }}" class="d-inline"
+              onsubmit="return confirm('Delete this complaint?');">
+            <button type="submit" class="btn btn-outline-danger">Delete</button>
+        </form>
+    </div>
+</div>
+
+<div class="mb-3">
+    {% if complaint.status == 'Completed' %}<span class="badge bg-success fs-6">Completed</span>
+    {% elif complaint.status == 'In Progress' %}<span class="badge bg-info fs-6">In Progress</span>
+    {% else %}<span class="badge bg-warning text-dark fs-6">Pending</span>{% endif %}
+</div>
+
+<table class="table" style="max-width:720px">
+    <tbody>
+        <tr><th style="width:200px">Date</th><td>{{ complaint.complaint_date.strftime("%Y-%m-%d") }}</td></tr>
+        <tr><th>Pump</th><td>{{ complaint.petrol_pump.name }}</td></tr>
+        <tr><th>Type</th><td>{{ complaint.complaint_type }}</td></tr>
+        <tr><th>Description</th><td>{{ complaint.description or "—" }}</td></tr>
+        <tr>
+            <th>Assigned Vendor</th>
+            <td>
+                {% if complaint.assigned_vendor %}
+                <a href="{{ url_for('master_data.vendors_view', vendor_id=complaint.assigned_vendor_id) }}">{{ complaint.assigned_vendor.name }}</a>
+                {% else %}—{% endif %}
+            </td>
+        </tr>
+        <tr><th>Estimated Cost</th><td>{{ "%.2f"|format(complaint.estimated_cost) if complaint.estimated_cost is not none else "—" }}</td></tr>
+        <tr><th>Actual Cost</th><td>{{ "%.2f"|format(complaint.actual_cost) if complaint.actual_cost is not none else "—" }}</td></tr>
+        <tr><th>Notes</th><td>{{ complaint.notes or "—" }}</td></tr>
+        <tr><th>Logged By</th><td>{{ complaint.created_by.full_name if complaint.created_by else "—" }}</td></tr>
+        <tr><th>Created</th><td>{{ complaint.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+    </tbody>
+</table>
+
+{% import "_attachments.html" as att with context %}
+{{ att.panel('maintenance', complaint.id, 'Maintenance Proof') }}
+
+<a href="{{ url_for('petrol_pumps.maintenance_list') }}" class="btn btn-link">&larr; Back to Maintenance</a>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Chart of Accounts &middot; Accounting{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('accounting.index') }}">Accounting</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Chart of Accounts</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Chart of Accounts</h1>
+    <a href="{{ url_for('accounting.chart_of_accounts_create') }}"
+       class="btn btn-primary">+ New Account</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto flex-grow-1">
+        <input type="text" name="q" value="{{ q }}" class="form-control"
+               placeholder="Search by code, name or type...">
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Search</button>
+        {% if q %}
+        <a href="{{ url_for('accounting.chart_of_accounts_list') }}"
+           class="btn btn-link">Clear</a>
+        {% endif %}
+    </div>
+</form>
+
+{% if accounts %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Business Unit</th>
+                <th>Parent</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for account in accounts %}
+            <tr>
+                <td><code>{{ account.code }}</code></td>
+                <td>{{ account.name }}</td>
+                <td>{{ account.account_type }}</td>
+                <td>{{ account.business_unit.name if account.business_unit else "Global" }}</td>
+                <td>{{ account.parent.code if account.parent else "—" }}</td>
+                <td>
+                    {% if account.is_active %}
+                    <span class="badge bg-success">Active</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ url_for('accounting.chart_of_accounts_view', account_id=account.id) }}"
+                       class="btn btn-sm btn-outline-primary">View</a>
+                    <a href="{{ url_for('accounting.chart_of_accounts_edit', account_id=account.id) }}"
+                       class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="post"
+                          action="{{ url_for('accounting.chart_of_accounts_toggle_status', account_id=account.id) }}"
+                          class="d-inline">
+                        {% if account.is_active %}
+                        <button type="submit" class="btn btn-sm btn-outline-warning">Deactivate</button>
+                        {% else %}
+                        <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
+                        {% endif %}
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+    No accounts found{% if q %} for "{{ q }}"{% endif %}.
+</div>
+{% endif %}
+
+<a href="{{ url_for('accounting.index') }}" class="btn btn-link">&larr; Back to Accounting</a>
+{% endblock %}

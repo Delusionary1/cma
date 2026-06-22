@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Customer Ledgers &middot; Accounting{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('accounting.index') }}">Accounting</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Customer Ledgers</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-3">Customer Ledgers (Receivables)</h1>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto flex-grow-1"><input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Search customer..."></div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Search</button>
+        {% if q %}<a href="{{ url_for('accounting.customer_ledgers_list') }}" class="btn btn-link">Clear</a>{% endif %}
+    </div>
+</form>
+
+{% if rows %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead><tr><th>Customer</th><th>Business Unit</th><th class="text-end">Receivable Balance</th><th class="text-end"></th></tr></thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td>{{ row.customer.name }}</td>
+                <td>{{ row.customer.business_unit.name if row.customer.business_unit else "—" }}</td>
+                <td class="text-end fw-semibold {{ 'text-danger' if row.balance < 0 else '' }}">{{ "%.2f"|format(row.balance) }}</td>
+                <td class="text-end"><a href="{{ url_for('accounting.customer_ledger_view', customer_id=row.customer.id) }}" class="btn btn-sm btn-outline-primary">Ledger</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot><tr class="table-light fw-bold"><td colspan="2" class="text-end">Total receivables</td><td class="text-end">{{ "%.2f"|format(total) }}</td><td></td></tr></tfoot>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No customers found.</div>
+{% endif %}
+
+<a href="{{ url_for('accounting.index') }}" class="btn btn-link">&larr; Back to Accounting</a>
+{% endblock %}

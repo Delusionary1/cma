@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {{ entry.voucher.voucher_number if entry.voucher else "Journal Entry" }} &middot; Accounting
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('accounting.index') }}">Accounting</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('accounting.journal_vouchers_list') }}">Journal Vouchers</a></li>
+        <li class="breadcrumb-item active" aria-current="page">
+            {{ entry.voucher.voucher_number if entry.voucher else "Entry " ~ entry.id }}
+        </li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">
+        {{ entry.voucher.voucher_number if entry.voucher else "Journal Entry " ~ entry.id }}
+    </h1>
+    {% if entry.is_posted %}
+    <span class="badge bg-success">Posted</span>
+    {% else %}
+    <span class="badge bg-secondary">Draft</span>
+    {% endif %}
+</div>
+
+<table class="table">
+    <tbody>
+        <tr><th style="width: 220px;">Date</th><td>{{ entry.entry_date.strftime("%Y-%m-%d") }}</td></tr>
+        <tr><th>Voucher Type</th><td>{{ entry.voucher.voucher_type if entry.voucher else "—" }}</td></tr>
+        <tr><th>Business Unit</th><td>{{ entry.business_unit.name if entry.business_unit else "—" }}</td></tr>
+        <tr><th>Description</th><td>{{ entry.description or "—" }}</td></tr>
+        <tr><th>Reference</th><td>{{ entry.voucher.reference_number if entry.voucher and entry.voucher.reference_number else "—" }}</td></tr>
+        <tr><th>Created By</th><td>{{ entry.created_by.full_name if entry.created_by else "—" }}</td></tr>
+    </tbody>
+</table>
+
+<h2 class="h5 mt-4 mb-2">Lines</h2>
+<div class="table-responsive">
+    <table class="table table-bordered align-middle">
+        <thead>
+            <tr>
+                <th>Account</th>
+                <th>Description</th>
+                <th class="text-end">Debit</th>
+                <th class="text-end">Credit</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in entry.lines %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('accounting.chart_of_accounts_view', account_id=line.chart_of_account_id) }}">
+                        {{ line.account.code }} - {{ line.account.name }}
+                    </a>
+                </td>
+                <td>{{ line.description or "—" }}</td>
+                <td class="text-end">{{ "%.2f"|format(line.debit) }}</td>
+                <td class="text-end">{{ "%.2f"|format(line.credit) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td colspan="2" class="text-end">Totals</td>
+                <td class="text-end">{{ "%.2f"|format(total_debit) }}</td>
+                <td class="text-end">{{ "%.2f"|format(total_credit) }}</td>
+            </tr>
+            <tr>
+                <td colspan="4" class="text-end">
+                    {% if total_debit == total_credit %}
+                    <span class="badge bg-success">Balanced</span>
+                    {% else %}
+                    <span class="badge bg-danger">Not balanced</span>
+                    {% endif %}
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<a href="{{ url_for('accounting.journal_vouchers_list') }}" class="btn btn-link">
+    &larr; Back to Journal Vouchers
+</a>
+{% endblock %}

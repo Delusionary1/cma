@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Sale Summary &middot; Petrol Pumps{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Daily Sale Summary</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1">
+    <h1 class="h3 mb-0">Daily Sale Summary{% if pump %} — {{ pump.name }}{% endif %}</h1>
+    <div>
+        <a href="{{ url_for('petrol_pumps.daily_sale_summary', export='xlsx', **filters) }}" class="btn btn-success btn-sm">Export Excel</a>
+        <a href="{{ url_for('petrol_pumps.daily_sale_summary', export='pdf', **filters) }}" class="btn btn-danger btn-sm">Export PDF</a>
+        <a href="{{ url_for('petrol_pumps.nozzle_sale_summary', **filters) }}" class="btn btn-outline-secondary btn-sm">Nozzle-wise</a>
+    </div>
+</div>
+<p class="text-muted">Product-wise retail sale totals from active machine readings.</p>
+
+<form method="get" class="row g-2 mb-3 align-items-center">
+    <div class="col-auto"><label class="col-form-label small text-muted">Date</label></div>
+    <div class="col-md-3">
+        <input type="date" name="date" value="{{ filters.date }}" class="form-control">
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Show</button>
+        <a href="{{ url_for('petrol_pumps.daily_sale_summary') }}" class="btn btn-link">Today</a>
+    </div>
+</form>
+
+{% if rows %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th class="text-end">Sale Liters</th>
+                <th class="text-end">Sale Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td>{{ row.product_name }}</td>
+                <td class="text-end">{{ "%.2f"|format(row.liters or 0) }}</td>
+                <td class="text-end">{{ "%.2f"|format(row.amount or 0) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td class="text-end">Total</td>
+                <td class="text-end">{{ "%.2f"|format(total_liters) }}</td>
+                <td class="text-end">{{ "%.2f"|format(total_amount) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No retail sales found for the selected filters.</div>
+{% endif %}
+
+<a href="{{ url_for('petrol_pumps.index') }}" class="btn btn-link">&larr; Back to Petrol Pumps</a>
+{% endblock %}

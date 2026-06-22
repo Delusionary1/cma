@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}{{ vendor.name }} &middot; Vendors{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.vendors_list') }}">Vendors</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ vendor.name }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{{ vendor.name }}</h1>
+    <div>
+        <a href="{{ url_for('master_data.vendors_edit', vendor_id=vendor.id) }}"
+           class="btn btn-outline-secondary">Edit</a>
+        <form method="post"
+              action="{{ url_for('master_data.vendors_toggle_status', vendor_id=vendor.id) }}"
+              class="d-inline">
+            {% if vendor.is_active %}
+            <button type="submit" class="btn btn-outline-warning">Deactivate</button>
+            {% else %}
+            <button type="submit" class="btn btn-outline-success">Activate</button>
+            {% endif %}
+        </form>
+        <form method="post"
+              action="{{ url_for('master_data.vendors_delete', vendor_id=vendor.id) }}"
+              class="d-inline"
+              onsubmit="return confirm('Permanently delete vendor \'{{ vendor.name|e }}\'? This cannot be undone.');">
+            <button type="submit" class="btn btn-outline-danger">Delete</button>
+        </form>
+    </div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr>
+            <th style="width: 220px;">Status</th>
+            <td>
+                {% if vendor.is_active %}
+                <span class="badge bg-success">Active</span>
+                {% else %}
+                <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>Business Unit</th>
+            <td>
+                <a href="{{ url_for('master_data.business_units_view', unit_id=vendor.business_unit_id) }}">
+                    {{ vendor.business_unit.name }}
+                </a>
+            </td>
+        </tr>
+        <tr><th>Vendor Type</th><td>{{ vendor.vendor_type.value }}</td></tr>
+        <tr><th>Phone Number</th><td>{{ vendor.phone_number or "—" }}</td></tr>
+        <tr><th>Contact Person</th><td>{{ vendor.contact_person or "—" }}</td></tr>
+        <tr><th>Address</th><td>{{ vendor.address or "—" }}</td></tr>
+        <tr><th>Opening Balance</th><td>{{ "%.2f"|format(vendor.opening_balance) }}</td></tr>
+        {% if payable is defined %}
+        <tr><th>Current Payable (we owe)</th><td class="fw-bold">{{ "%.2f"|format(payable) }}</td></tr>
+        {% endif %}
+        <tr><th>Created</th><td>{{ vendor.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+        <tr><th>Updated</th><td>{{ vendor.updated_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+    </tbody>
+</table>
+
+{% if vendor.vendor_type.value == 'PSO' %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><strong>PSO Card</strong> — cash collected at pumps via PSO fleet card</span>
+        <span>
+            <span class="badge bg-warning text-dark">Pending: {{ "%.0f"|format(pso_pending) }}</span>
+            <span class="badge bg-success">Verified: {{ "%.0f"|format(pso_verified) }}</span>
+        </span>
+    </div>
+    <div class="card-body">
+        <p class="text-muted small mb-3">
+            Each pump's PSO card amounts land here. Verify an entry once you have
+            confirmed it with PSO — verifying reduces the PSO payable above.
+        </p>
+        {% if pso_groups %}
+        {% for g in pso_groups %}
+        <div class="mb-3">
+            <h2 class="h6 border-bottom pb-1">
+                {{ g.pump.name if g.pump else 'Unknown pump' }}
+                <span class="text-muted small">
+                    — pending {{ "%.0f"|format(g.pending) }}, verified {{ "%.0f"|format(g.verified) }}
+                </span>
+            </h2>
+            <table class="table table-sm align-middle mb-0">
+                <thead><tr><th>Date</th><th class="text-end">Amount</th><th>Status</th><th class="text-end">Action</th></tr></thead>
+                <tbody>
+                {% for e in g.entries %}
+                <tr>
+                    <td>{{ e.payment_date.strftime("%Y-%m-%d") }}</td>
+                    <td class="text-end">{{ "%.2f"|format(e.amount) }}</td>
+                    <td>
+                        {% if e.is_verified %}
+                        <span class="badge bg-success">Verified</span>
+                        {% if e.verified_at %}<span class="text-muted small">{{ e.verified_at.strftime("%Y-%m-%d") }}</span>{% endif %}
+                        {% else %}
+                        <span class="badge bg-warning text-dark">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <form method="post" action="{{ url_for('master_data.vendors_pso_card_verify', vendor_id=vendor.id, payment_id=e.id) }}" class="d-inline">
+                            {% if e.is_verified %}
+                            <button class="btn btn-outline-secondary btn-sm" onsubmit="">Un-verify</button>
+                            {% else %}
+                            <button class="btn btn-success btn-sm">Verify</button>
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="text-muted">No PSO card amounts recorded yet.</div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<a href="{{ url_for('master_data.vendors_list') }}" class="btn btn-link">
+    &larr; Back to Vendors
+</a>
+{% endblock %}

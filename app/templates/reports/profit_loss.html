@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Profit / Loss &middot; Reports{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('reports.index') }}">Reports</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Profit / Loss</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-3">Business-wise Profit / Loss</h1>
+
+<form method="get" class="row g-2 mb-4">
+    <div class="col-auto"><label class="col-form-label">From</label></div>
+    <div class="col-auto"><input type="date" name="from" value="{{ filters.from }}" class="form-control"></div>
+    <div class="col-auto"><label class="col-form-label">To</label></div>
+    <div class="col-auto"><input type="date" name="to" value="{{ filters.to }}" class="form-control"></div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Apply</button>
+        {% if filters.from or filters.to %}<a href="{{ url_for('reports.profit_loss') }}" class="btn btn-link">Clear</a>{% endif %}
+    </div>
+    <div class="col-auto ms-auto">
+        <a href="{{ url_for('reports.profit_loss', export='xlsx', **filters) }}" class="btn btn-success btn-sm">Export Excel</a>
+        <a href="{{ url_for('reports.profit_loss', export='pdf', **filters) }}" class="btn btn-danger btn-sm">Export PDF</a>
+    </div>
+</form>
+
+<h2 class="h5">Petrol Pump Retail</h2>
+<table class="table table-sm w-auto">
+    <tr><th>Fuel sale</th><td class="text-end">{{ "%.2f"|format(s.pump.fuel_sale) }}</td></tr>
+    <tr><th>Fuel liters</th><td class="text-end">{{ "%.2f"|format(s.pump.fuel_liters) }}</td></tr>
+    <tr><th>Lubricant sale</th><td class="text-end">{{ "%.2f"|format(s.pump.lubricant_sale) }}</td></tr>
+    <tr><th>Total revenue</th><td class="text-end fw-bold">{{ "%.2f"|format(s.pump.revenue) }}</td></tr>
+    <tr><th>Fuel COGS (weighted-avg)</th><td class="text-end">{{ "%.2f"|format(s.pump.cogs) }}</td></tr>
+    <tr><th>Fuel gross profit</th><td class="text-end">{{ "%.2f"|format(s.pump.fuel_gross_profit) }}</td></tr>
+    <tr><th>Stock gain/loss (approved)</th><td class="text-end {{ 'text-danger' if s.pump.stock_gain_loss < 0 else ('text-success' if s.pump.stock_gain_loss > 0 else '') }}">{{ "%+.2f"|format(s.pump.stock_gain_loss) }}</td></tr>
+    <tr><th>Expenses</th><td class="text-end">{{ "%.2f"|format(s.pump.expenses) }}</td></tr>
+    <tr class="table-light"><th>Net</th><td class="text-end fw-bold {{ 'text-danger' if s.pump.net < 0 else '' }}">{{ "%.2f"|format(s.pump.net) }}</td></tr>
+    <tr><th>Fuel purchases (stock)</th><td class="text-end">{{ "%.2f"|format(s.pump.purchases) }}</td></tr>
+</table>
+
+<h2 class="h5 mt-4">Bulk Sale</h2>
+<table class="table table-sm w-auto">
+    <tr><th>Sale</th><td class="text-end">{{ "%.2f"|format(s.bulk.sale) }}</td></tr>
+    <tr><th>Purchase cost</th><td class="text-end">{{ "%.2f"|format(s.bulk.purchase) }}</td></tr>
+    <tr class="table-light"><th>Net profit</th><td class="text-end fw-bold {{ 'text-danger' if s.bulk.net < 0 else '' }}">{{ "%.2f"|format(s.bulk.net) }}</td></tr>
+</table>
+
+<h2 class="h5 mt-4">Carriage</h2>
+<table class="table table-sm w-auto">
+    <tr><th>Freight income</th><td class="text-end">{{ "%.2f"|format(s.carriage.freight) }}</td></tr>
+    <tr><th>Trip expenses</th><td class="text-end">{{ "%.2f"|format(s.carriage.expenses) }}</td></tr>
+    <tr class="table-light"><th>Net profit</th><td class="text-end fw-bold {{ 'text-danger' if s.carriage.net < 0 else '' }}">{{ "%.2f"|format(s.carriage.net) }}</td></tr>
+</table>
+
+<h2 class="h5 mt-4">Oil Agencies</h2>
+<table class="table table-sm w-auto">
+    <tr><th>Sale</th><td class="text-end">{{ "%.2f"|format(s.agency.sale) }}</td></tr>
+    <tr><th>Purchases (vendor)</th><td class="text-end">{{ "%.2f"|format(s.agency.purchases) }}</td></tr>
+    <tr class="table-light"><th>Net profit (sales)</th><td class="text-end fw-bold {{ 'text-danger' if s.agency.net < 0 else '' }}">{{ "%.2f"|format(s.agency.net) }}</td></tr>
+</table>
+
+<h2 class="h5 mt-4">Head Office (overhead)</h2>
+<table class="table table-sm w-auto">
+    <tr><th>Cash received from pumps</th><td class="text-end">{{ "%.2f"|format(s.head_office.cash_received) }}</td></tr>
+    <tr><th>Head office expenses</th><td class="text-end">{{ "%.2f"|format(s.head_office.expenses) }}</td></tr>
+    <tr><th>Vendor payments</th><td class="text-end">{{ "%.2f"|format(s.head_office.vendor_payments) }}</td></tr>
+</table>
+
+<div class="alert alert-primary mt-4 d-inline-block">
+    <strong>Combined Profit / Loss:</strong>
+    <span class="{{ 'text-danger' if s.combined_profit < 0 else 'text-success' }}">{{ "%.2f"|format(s.combined_profit) }}</span>
+</div>
+
+<p class="text-muted small">
+    Combined = pump net + bulk + carriage + agency profit − head office expenses
+    − vendor payments. Head office cash received is an internal transfer and is
+    excluded. Pump net now includes fuel COGS (weighted-average cost); lubricant
+    cost is not yet captured.
+</p>
+
+<a href="{{ url_for('reports.index') }}" class="btn btn-link">&larr; Back to Reports</a>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Agency Reports · CMA &amp; Co.{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('agency.index') }}">Oil Agency</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Reports</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Agency Reports</h1>
+    <div>
+        <a href="{{ url_for('agency.reports', export='xlsx', **filters) }}" class="btn btn-success btn-sm">Export Excel</a>
+        <a href="{{ url_for('agency.reports', export='pdf', **filters) }}" class="btn btn-danger btn-sm">Export PDF</a>
+    </div>
+</div>
+<p class="text-muted">LDO &amp; Kerosene sale, customer receivables and vendor payables (BRD §13.4).</p>
+
+<form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-auto"><label class="form-label">From</label><input type="date" name="from" value="{{ filters.from }}" class="form-control"></div>
+    <div class="col-auto"><label class="form-label">To</label><input type="date" name="to" value="{{ filters.to }}" class="form-control"></div>
+    <div class="col-auto"><button class="btn btn-outline-secondary">Apply</button>
+        {% if filters.from or filters.to %}<a href="{{ url_for('agency.reports') }}" class="btn btn-link">Clear</a>{% endif %}
+    </div>
+</form>
+
+{% macro sale_table(title, grp, key, last_label) %}
+<h2 class="h5 mb-2">{{ title }}</h2>
+{% if grp.rows %}
+<div class="table-responsive mb-4">
+    <table class="table table-striped align-middle">
+        <thead><tr><th>{{ key }}</th><th class="text-center">Deals</th><th class="text-end">Qty</th><th class="text-end">Sale</th><th class="text-end">Net</th><th class="text-end">{{ last_label }}</th></tr></thead>
+        <tbody>
+            {% for r in grp.rows %}
+            <tr>
+                <td class="fw-semibold">{{ r.label }}</td>
+                <td class="text-center">{{ r.deals }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.qty) }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.sale) }}</td>
+                <td class="text-end {{ 'text-danger' if r.net < 0 else 'text-success' }}">{{ "%.2f"|format(r.net) }}</td>
+                <td class="text-end {{ 'text-danger' if r.outstanding > 0 }}">{{ "%.2f"|format(r.outstanding) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td class="text-end">Total</td><td class="text-center">{{ grp.totals.deals }}</td>
+                <td class="text-end">{{ "%.2f"|format(grp.totals.qty) }}</td><td class="text-end">{{ "%.2f"|format(grp.totals.sale) }}</td>
+                <td class="text-end {{ 'text-danger' if grp.totals.net < 0 else 'text-success' }}">{{ "%.2f"|format(grp.totals.net) }}</td>
+                <td class="text-end">{{ "%.2f"|format(grp.totals.outstanding) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+{% else %}<div class="alert alert-info">No agency sales in this period.</div>{% endif %}
+{% endmacro %}
+
+{{ sale_table("Product-wise Sale (LDO / Kerosene)", data.products, "Product", "Receivable") }}
+{{ sale_table("Customer-wise Sale", data.customers, "Customer", "Receivable") }}
+
+<h2 class="h5 mb-2">Delivery-method-wise Sale &amp; Carriage Cost</h2>
+<p class="text-muted small mb-2">Sale and delivery (carriage) cost split by how the product reached the customer (BRD §9.7 / §13.4).</p>
+{% if data.delivery.rows %}
+<div class="table-responsive mb-4">
+    <table class="table table-striped align-middle">
+        <thead><tr><th>Delivery Method</th><th class="text-center">Deals</th><th class="text-end">Qty</th><th class="text-end">Sale</th><th class="text-end">Carriage Cost</th><th class="text-end">Net</th></tr></thead>
+        <tbody>
+            {% for r in data.delivery.rows %}
+            <tr>
+                <td class="fw-semibold">{{ r.label }}</td>
+                <td class="text-center">{{ r.deals }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.qty) }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.sale) }}</td>
+                <td class="text-end {{ 'text-danger' if r.carriage > 0 }}">{{ "%.2f"|format(r.carriage) }}</td>
+                <td class="text-end {{ 'text-danger' if r.net < 0 else 'text-success' }}">{{ "%.2f"|format(r.net) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td class="text-end">Total</td><td class="text-center">{{ data.delivery.totals.deals }}</td>
+                <td class="text-end">{{ "%.2f"|format(data.delivery.totals.qty) }}</td>
+                <td class="text-end">{{ "%.2f"|format(data.delivery.totals.sale) }}</td>
+                <td class="text-end">{{ "%.2f"|format(data.delivery.totals.carriage) }}</td>
+                <td class="text-end {{ 'text-danger' if data.delivery.totals.net < 0 else 'text-success' }}">{{ "%.2f"|format(data.delivery.totals.net) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+{% else %}<div class="alert alert-info">No agency sales in this period.</div>{% endif %}
+
+<h2 class="h5 mb-2">Vendor-wise Purchase</h2>
+{% if data.vendors.rows %}
+<div class="table-responsive mb-4">
+    <table class="table table-striped align-middle">
+        <thead><tr><th>Vendor</th><th class="text-center">Deals</th><th class="text-end">Qty</th><th class="text-end">Purchase</th><th class="text-end">Payable</th></tr></thead>
+        <tbody>
+            {% for r in data.vendors.rows %}
+            <tr>
+                <td class="fw-semibold">{{ r.label }}</td><td class="text-center">{{ r.deals }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.qty) }}</td><td class="text-end">{{ "%.2f"|format(r.purchase) }}</td>
+                <td class="text-end {{ 'text-danger' if r.payable > 0 }}">{{ "%.2f"|format(r.payable) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold"><td class="text-end">Total</td><td class="text-center">{{ data.vendors.totals.deals }}</td>
+                <td class="text-end">{{ "%.2f"|format(data.vendors.totals.qty) }}</td><td class="text-end">{{ "%.2f"|format(data.vendors.totals.purchase) }}</td>
+                <td class="text-end">{{ "%.2f"|format(data.vendors.totals.payable) }}</td></tr>
+        </tfoot>
+    </table>
+</div>
+{% else %}<div class="alert alert-info">No agency purchases in this period.</div>{% endif %}
+
+<h2 class="h5 mb-2">Godown Stock (on-hand by product)</h2>
+<p class="text-muted small mb-2">On-hand = received into godown (purchases marked “to godown”) − sold from godown (sales marked “from godown”). Optional stock flow (BRD §9.5).</p>
+{% if data.godown.rows %}
+<div class="table-responsive mb-4">
+    <table class="table table-striped align-middle">
+        <thead><tr><th>Product</th><th class="text-end">Received</th><th class="text-end">Sold</th><th class="text-end">On Hand</th></tr></thead>
+        <tbody>
+            {% for r in data.godown.rows %}
+            <tr>
+                <td class="fw-semibold">{{ r.product }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.received) }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.sold) }}</td>
+                <td class="text-end fw-semibold {{ 'text-danger' if r.on_hand < 0 }}">{{ "%.2f"|format(r.on_hand) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td class="text-end">Total</td>
+                <td class="text-end">{{ "%.2f"|format(data.godown.totals.received) }}</td>
+                <td class="text-end">{{ "%.2f"|format(data.godown.totals.sold) }}</td>
+                <td class="text-end">{{ "%.2f"|format(data.godown.totals.on_hand) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+{% else %}<div class="alert alert-info">No godown stock movement in this period (mark agency purchases “received to godown” and sales “sold from godown” to track on-hand).</div>{% endif %}
+
+<a href="{{ url_for('agency.index') }}" class="btn btn-link">&larr; Back to Oil Agency</a>
+{% endblock %}

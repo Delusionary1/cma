@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}{{ unit.name }} &middot; Business Units{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.business_units_list') }}">Business Units</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ unit.name }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{{ unit.name }}</h1>
+    <div>
+        <a href="{{ url_for('master_data.business_units_edit', unit_id=unit.id) }}"
+           class="btn btn-outline-secondary">Edit</a>
+        <form method="post"
+              action="{{ url_for('master_data.business_units_toggle_status', unit_id=unit.id) }}"
+              class="d-inline">
+            {% if unit.is_active %}
+            <button type="submit" class="btn btn-outline-warning">Deactivate</button>
+            {% else %}
+            <button type="submit" class="btn btn-outline-success">Activate</button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr>
+            <th style="width: 220px;">Status</th>
+            <td>
+                {% if unit.is_active %}
+                <span class="badge bg-success">Active</span>
+                {% else %}
+                <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+            </td>
+        </tr>
+        <tr><th>Type</th><td><code>{{ unit.type.value }}</code></td></tr>
+        <tr><th>Description</th><td>{{ unit.description or "—" }}</td></tr>
+        <tr><th>Petrol pumps linked</th><td>{{ unit.petrol_pumps | length }}</td></tr>
+        <tr><th>Created</th><td>{{ unit.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+        <tr><th>Updated</th><td>{{ unit.updated_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+    </tbody>
+</table>
+
+<a href="{{ url_for('master_data.business_units_list') }}" class="btn btn-link">
+    &larr; Back to Business Units
+</a>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} Dashboard · Reports{% endblock %}
+
+{% block content %}
+<style>
+.dash-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 20px}
+.dash-tabs a{
+    font-size:13px;font-weight:600;padding:8px 16px;border-radius:999px;
+    border:1px solid var(--border-2);background:#fff;color:var(--ink-2);text-decoration:none;
+    transition:all .25s var(--ease);
+}
+.dash-tabs a:hover{border-color:var(--faint);color:var(--ink)}
+.dash-tabs a.on{background:var(--fire);color:#1a1206;border-color:transparent;box-shadow:0 6px 16px rgba(245,165,36,.3)}
+
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:22px}
+.dk{
+    position:relative;background:#fff;border:1px solid var(--border);border-radius:14px;
+    padding:16px 18px;overflow:hidden;box-shadow:var(--shadow-sm);
+    transition:transform .35s var(--ease),box-shadow .35s var(--ease);
+}
+.dk:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+.dk::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--acc,#F5A524)}
+.dk-l{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin-bottom:7px;font-weight:600}
+.dk-v{font-family:var(--fd);font-size:24px;font-weight:700;color:var(--ink);line-height:1.05}
+.dk-s{font-size:11.5px;color:var(--faint);margin-top:5px}
+
+.dpanel{background:#fff;border:1px solid var(--border);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow-sm);margin-bottom:18px}
+.dpanel h2{font-size:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--dim);margin-bottom:16px}
+.dpanel-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:820px){.dpanel-grid{grid-template-columns:1fr}}
+
+.dbars{display:flex;flex-direction:column;gap:13px}
+.dbar-h{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
+.dbar-h span{color:var(--ink-2);font-weight:500}
+.dbar-h b{font-family:var(--fm);font-size:12.5px;color:var(--ink)}
+.dbar-t{height:9px;border-radius:99px;background:#EEF1F6;overflow:hidden}
+.dbar-t i{display:block;height:100%;border-radius:99px;transition:width 1s var(--ease)}
+
+.dchips{display:flex;gap:12px;flex-wrap:wrap}
+.dchip{
+    background:#F6F8FB;border:1px solid var(--border);border-radius:12px;padding:12px 18px;text-align:center;min-width:96px;
+}
+.dchip b{display:block;font-family:var(--fd);font-size:22px;color:var(--ink)}
+.dchip span{font-size:11px;color:var(--dim);letter-spacing:.04em}
+</style>
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('reports.index') }}">Reports</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ title }} Dashboard</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+    <h1 class="h3 mb-0">{{ title }} Dashboard</h1>
+    <form method="get" class="d-flex gap-2 align-items-center">
+        <input type="date" name="from" value="{{ filters.from }}" class="form-control form-control-sm" style="width:auto">
+        <span class="text-muted small">to</span>
+        <input type="date" name="to" value="{{ filters.to }}" class="form-control form-control-sm" style="width:auto">
+        <button class="btn btn-outline-secondary btn-sm">Apply</button>
+        {% if filters.from or filters.to %}<a href="{{ url_for('reports.business_dashboard', unit=unit) }}" class="btn btn-link btn-sm">Clear</a>{% endif %}
+    </form>
+</div>
+
+<div class="dash-tabs">
+    {% for key, meta in dashboards_nav.items() %}
+    <a href="{{ url_for('reports.business_dashboard', unit=key, **filters) }}" class="{{ 'on' if key == unit }}">{{ meta[0] }}</a>
+    {% endfor %}
+</div>
+
+{% block dash %}{% endblock %}
+
+<a href="{{ url_for('reports.index') }}" class="btn btn-link">&larr; Back to Reports</a>
+{% endblock %}

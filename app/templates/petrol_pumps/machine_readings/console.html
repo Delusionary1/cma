@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block title %}Reading Console · Petrol Pumps{% endblock %}
+
+{% block content %}
+<style>
+/* ============ READING CONSOLE (scoped) ============ */
+.rc-wrap{position:relative;border-radius:22px;overflow:hidden;
+    background:linear-gradient(150deg,#0C1017,#121823 55%,#161E2B);
+    border:1px solid rgba(255,255,255,.08);padding:26px 28px 30px;color:#E8EBF0;}
+.rc-wrap::before{content:"";position:absolute;right:-160px;top:-180px;width:480px;height:480px;border-radius:50%;
+    background:radial-gradient(circle,rgba(245,165,36,.16),transparent 65%);pointer-events:none;}
+.rc-wrap>*{position:relative;z-index:1}
+
+.rc-eyebrow{font-family:var(--fm);font-size:10.5px;letter-spacing:.26em;color:#FFB84A;text-transform:uppercase;
+    display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.rc-eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:#F5A524;box-shadow:0 0 10px #F5A524}
+.rc-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.rc-head h1{font-family:var(--fl);color:#fff;font-size:26px;margin:0;letter-spacing:.01em}
+.rc-head h1 b{color:#FFC04D}
+.rc-head .rc-date{font-family:var(--fm);font-size:11px;letter-spacing:.14em;color:#9AA4B6}
+
+/* ---- pump selector bar (locked: pump is chosen on the dashboard) ---- */
+.rc-pumps{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px;
+    background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);
+    border-radius:16px;padding:8px}
+.rc-pump{display:flex;align-items:center;gap:10px;text-decoration:none;
+    padding:11px 20px;border-radius:11px;color:#B9C2D0;font-weight:600;font-size:13.5px;
+    transition:all .3s var(--ease);border:1px solid transparent}
+.rc-pump svg{width:17px;height:17px;flex-shrink:0}
+.rc-pump:hover{background:rgba(255,255,255,.06);color:#fff}
+.rc-pump.on{background:linear-gradient(92deg,#FFC857,#F5A524 60%,#FF8A1E);color:#16110A;
+    box-shadow:0 6px 20px rgba(245,165,36,.4)}
+
+/* ---- top controls: date · shift · per-product rate ---- */
+.rc-controls{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px}
+.rc-ctrl label{display:block;font-family:var(--fm);font-size:9.5px;letter-spacing:.16em;color:#9AA4B6;
+    text-transform:uppercase;margin-bottom:7px}
+.rc-ctrl input{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
+    border-radius:11px;color:#F4F6F9;padding:11px 14px;font-size:14px;font-family:var(--fb);outline:none;color-scheme:dark}
+.rc-ctrl input:focus{border-color:rgba(245,165,36,.6);box-shadow:0 0 0 4px rgba(245,165,36,.12)}
+.rc-rate{width:130px;font-family:var(--fm)}
+
+.rc-seg{display:flex;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+    border-radius:12px;padding:4px;gap:4px}
+.rc-seg button{display:flex;align-items:center;justify-content:center;gap:8px;
+    border:0;background:transparent;color:#B9C2D0;font:600 13px/1 var(--fb);
+    padding:11px 16px;border-radius:9px;cursor:pointer;transition:all .3s;white-space:nowrap}
+.rc-seg button.on{background:linear-gradient(92deg,#FFC857,#F5A524 60%,#FF8A1E);color:#16110A;
+    box-shadow:0 5px 16px rgba(245,165,36,.4)}
+
+/* ---- nozzle table ---- */
+.rc-tbl{width:100%;border-collapse:collapse}
+.rc-tbl th{font-family:var(--fm);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#8C96A8;
+    text-align:left;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.10)}
+.rc-tbl th.num,.rc-tbl td.num{text-align:right}
+/* keep the table dark even though it sits inside the themed page (don't use
+   Bootstrap .table-responsive — its background is white) */
+.rc-tblwrap{overflow-x:auto;border-radius:14px;border:1px solid rgba(255,255,255,.08);
+    background:rgba(255,255,255,.02)}
+.rc-tbl td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06);color:#E8EBF0;vertical-align:middle}
+.rc-tbl td.lbl{font-family:var(--fd);font-weight:800;font-size:17px;color:var(--cc,#FFC857);
+    text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+.rc-dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:9px;vertical-align:middle;
+    background:var(--cc,#FFC857);box-shadow:0 0 10px var(--cc,#FFC857),0 0 4px var(--cc,#FFC857)}
+.rc-tbl td.prod{color:#C3CBD8;font-size:12.5px;white-space:nowrap}
+.rc-tbl input{width:130px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);
+    border-radius:9px;color:#fff;padding:9px 11px;font-family:var(--fm);font-size:14px;outline:none;
+    transition:border-color .25s,box-shadow .25s}
+.rc-tbl input[data-opening]{color:#C3CBD8}
+.rc-tbl input[data-closing]{border-color:rgba(245,165,36,.45);background:rgba(245,165,36,.10);font-weight:700;color:#FFE0A6}
+.rc-tbl input:focus{border-color:rgba(245,165,36,.65);box-shadow:0 0 0 4px rgba(245,165,36,.13)}
+.rc-note{margin:0 0 16px;padding:11px 15px;border-radius:11px;font-size:12.5px;
+    background:rgba(255,184,74,.10);border:1px solid rgba(255,184,74,.35);color:#FFD79A}
+.rc-err{margin:0 0 16px;padding:12px 16px;border-radius:11px;font-size:13px;
+    background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.42);color:#FFB4B4}
+.rc-err b{display:block;margin-bottom:5px;color:#FF8A8A;font-family:var(--fm);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.rc-err ul{margin:0;padding-left:18px}
+.rc-err li{margin:2px 0}
+.rc-tbl td.num span{font-family:var(--fm);font-size:13.5px;color:#C3CBD8}
+.rc-tbl td.num span.neg{color:#FF6B6B}
+.rc-tbl tfoot td{border-top:1px solid rgba(255,255,255,.16);border-bottom:none;padding-top:13px;
+    font-family:var(--fd);color:#fff;font-size:15px}
+.rc-tbl tfoot td b{color:#FFC857}
+/* per-product subtotal rows: lighter, no heavy border (only the grand total has it) */
+.rc-tbl tfoot tr.rc-subtot td{border-top:1px solid rgba(255,255,255,.05);padding-top:8px;padding-bottom:8px;
+    font-family:var(--fm);font-size:13px;color:#C3CBD8}
+
+.rc-empty{padding:46px 20px;text-align:center;color:#9AA4B6;font-size:14px;
+    background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.15);border-radius:16px}
+.rc-empty a{color:#FFC857;font-weight:600}
+
+.rc-save{margin-top:20px;max-width:440px;width:100%;border:0;border-radius:13px;padding:15px;cursor:pointer;
+    font:700 15px/1 var(--fb);letter-spacing:.03em;color:#16110A;
+    background:linear-gradient(92deg,#FFC857,#F5A524 55%,#FF8A1E);
+    box-shadow:0 10px 28px rgba(245,165,36,.4);transition:transform .25s,box-shadow .3s}
+.rc-save:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(245,165,36,.5)}
+.rc-save:active{transform:scale(.98)}
+.rc-save[disabled]{opacity:.6;pointer-events:none}
+
+@media(max-width:640px){
+    .rc-wrap{padding:18px 14px 22px}
+    .rc-tbl input,.rc-rate{width:100%}
+    .rc-tbl td,.rc-tbl th{padding:8px 6px}
+}
+</style>
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Reading Console</li>
+    </ol>
+</nav>
+
+<div class="rc-wrap">
+    <div class="rc-head">
+        <div>
+            <div class="rc-eyebrow">Petrol Pump Retail · Meter Entry</div>
+            <h1>Reading <b>Console</b></h1>
+        </div>
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <span class="rc-date">{{ today.strftime("%A, %d %B %Y")|upper }}</span>
+            <a href="{{ url_for('petrol_pumps.machine_readings_list', petrol_pump_id=pump.id if pump else None) }}" class="btn btn-outline-secondary btn-sm">History</a>
+        </div>
+    </div>
+
+    {% if pumps %}
+    <div class="rc-pumps">
+        <span class="rc-pump on">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                <path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16M4 21h11M15 9h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V9.5L19 7"/><path d="M7 7h5v4H7z"/>
+            </svg>
+            {{ pump.name if pump }}
+        </span>
+        <a class="rc-pump" href="{{ url_for('petrol_pumps.index', pump=pump.id if pump else None) }}"
+           style="margin-left:auto">Change pump &rsaquo;</a>
+    </div>
+
+    {% if nozzles %}
+    {% set this_done = done_night if sel_shift == shift_night else done_day %}
+    <form method="post" action="{{ url_for('petrol_pumps.machine_readings_console_save') }}" id="rcForm" data-done="{{ '1' if this_done else '' }}">
+        <input type="hidden" name="petrol_pump_id" value="{{ pump.id if pump }}">
+        <input type="hidden" name="shift" id="rcShift" value="{{ sel_shift }}">
+
+        <div class="rc-err" id="rcErr" style="display:none"></div>
+
+        <div class="rc-controls">
+            <div class="rc-ctrl">
+                <label>Reading date</label>
+                <input type="date" id="rcDate" name="reading_date" value="{{ sel_date.isoformat() }}" required>
+            </div>
+            <div class="rc-ctrl">
+                <label>Shift</label>
+                <div class="rc-seg" id="rcSeg">
+                    <button type="button" class="{{ 'on' if sel_shift == shift_day }}" data-shift="{{ shift_day }}">☀ Day (12h){% if done_day %} ✓{% endif %}</button>
+                    <button type="button" class="{{ 'on' if sel_shift == shift_night }}" data-shift="{{ shift_night }}">☾ Night (12h){% if done_night %} ✓{% endif %}</button>
+                </div>
+            </div>
+            {% for p in products %}
+            {% set pn = p.name|lower %}
+            {% set cc = '#F5A524' if 'petrol' in pn else ('#22B8D4' if 'diesel' in pn else ('#9B7FE8' if 'octane' in pn else '#8C96A8')) %}
+            <div class="rc-ctrl">
+                <label><span class="rc-dot" style="--cc:{{ cc }}"></span>{{ p.name }} rate / L</label>
+                <input type="number" step="0.01" min="0" name="rate_{{ p.id }}" value="{{ p.rate }}" data-rate="{{ p.id }}" class="rc-rate" {% if this_done %}readonly{% endif %}>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if this_done %}
+        <div class="rc-note">✓ {{ sel_shift }} for {{ sel_date.strftime("%d %b %Y") }} is already entered — showing the saved opening &amp; closing (locked). Switch shift or date to add a new entry.</div>
+        {% endif %}
+
+        <div class="rc-tblwrap">
+        <table class="rc-tbl">
+            <thead>
+                <tr><th>Nozzle</th><th>Product</th><th>Opening</th><th>Closing — after 12h</th><th class="num">Liters</th><th class="num">Amount</th></tr>
+            </thead>
+            <tbody>
+            {% for nz in nozzles %}
+            {% set pn = nz.product_name|lower %}
+            {% set cc = '#F5A524' if 'petrol' in pn else ('#22B8D4' if 'diesel' in pn else ('#9B7FE8' if 'octane' in pn else '#8C96A8')) %}
+            <tr data-row data-product="{{ nz.product_id }}" style="--cc:{{ cc }}">
+                <td class="lbl"><span class="rc-dot"></span>{{ nz.label }}</td>
+                <td class="prod">{{ nz.product_name }}</td>
+                <td><input type="number" step="0.01" min="0" name="opening_{{ nz.n.id }}" value="{{ nz.opening }}" data-opening {% if nz.locked %}readonly{% endif %} title="Auto-filled from the last saved closing — editable if you need to correct it"></td>
+                <td><input type="number" step="0.01" min="0" name="closing_{{ nz.n.id }}" value="{{ nz.closing if nz.closing is not none else '' }}" placeholder="enter today's meter" data-closing autocomplete="off" {% if nz.locked %}readonly{% endif %}></td>
+                <td class="num"><span data-liters>0.00</span></td>
+                <td class="num"><span data-amount>0</span></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot>
+                {% for p in products %}
+                {% set pn = p.name|lower %}
+                {% set cc = '#F5A524' if 'petrol' in pn else ('#22B8D4' if 'diesel' in pn else ('#9B7FE8' if 'octane' in pn else '#8C96A8')) %}
+                <tr class="rc-subtot">
+                    <td colspan="4" class="num"><span class="rc-dot" style="--cc:{{ cc }}"></span>{{ p.name }} total</td>
+                    <td class="num"><span data-tot-liters="{{ p.id }}">0.00</span></td>
+                    <td class="num"><span data-tot-amount="{{ p.id }}">0</span></td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td colspan="4" class="num">All products</td>
+                    <td class="num"><b id="rcTotL">0.00</b></td>
+                    <td class="num"><b>PKR <span id="rcTotA">0</span></b></td>
+                </tr>
+            </tfoot>
+        </table>
+        </div>
+
+        {% if this_done %}
+        <button type="button" class="rc-save" id="rcSave" disabled>Already Saved — Sale PKR <span id="rcBtnA">0</span></button>
+        {% else %}
+        <button type="submit" class="rc-save" id="rcSave">Save Reading — Sale PKR <span id="rcBtnA">0</span></button>
+        {% endif %}
+    </form>
+    {% else %}
+    <div class="rc-empty">
+        No active nozzles for <b>{{ pump.name if pump }}</b> yet —
+        <a href="{{ url_for('petrol_pumps.nozzles_list') }}">add nozzles in Pump Setup</a>.
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="rc-empty">No active petrol pumps. <a href="{{ url_for('master_data.index') }}">Add a pump in Master Data</a>.</div>
+    {% endif %}
+</div>
+
+<script>
+(function(){
+"use strict";
+var form=document.getElementById("rcForm");
+if(!form)return;
+var nf2=new Intl.NumberFormat("en",{minimumFractionDigits:2,maximumFractionDigits:2});
+var nf0=new Intl.NumberFormat("en",{maximumFractionDigits:0});
+var seg=document.getElementById("rcSeg"),dateInput=document.getElementById("rcDate"),
+    totL=document.getElementById("rcTotL"),totA=document.getElementById("rcTotA"),
+    btnA=document.getElementById("rcBtnA"),saveBtn=document.getElementById("rcSave");
+var PUMP_ID={{ pump.id if pump else 'null' }};
+
+// Switching shift OR date reloads from the server so each nozzle's OPENING is
+// refreshed to its latest saved meter (day → night opening = day's closing).
+function reload(shift){
+    var u=new URL(window.location.href);
+    u.searchParams.set("pump",PUMP_ID);
+    u.searchParams.set("shift",shift);
+    u.searchParams.set("reading_date",dateInput.value);
+    window.location.href=u.toString();
+}
+
+function rateFor(pid){var el=form.querySelector('[data-rate="'+pid+'"]');return el?(parseFloat(el.value)||0):0;}
+
+function recalc(){
+    var L=0,A=0,byProd={};   // byProd[productId] = {l, a}
+    form.querySelectorAll("[data-row]").forEach(function(row){
+        var pid=row.dataset.product,
+            o=parseFloat(row.querySelector("[data-opening]").value)||0,
+            cRaw=row.querySelector("[data-closing]").value,
+            r=rateFor(pid),
+            liters=0,amt=0,bad=false;
+        if(cRaw!==""){
+            liters=parseFloat(cRaw)-o;
+            if(liters<0){bad=true;liters=0;}else{amt=liters*r;}
+        }
+        var lo=row.querySelector("[data-liters]"),ao=row.querySelector("[data-amount]");
+        lo.textContent=nf2.format(liters);lo.classList.toggle("neg",bad);
+        ao.textContent=bad?"closing < opening":nf0.format(amt);ao.classList.toggle("neg",bad);
+        L+=liters;A+=amt;
+        if(!byProd[pid])byProd[pid]={l:0,a:0};
+        byProd[pid].l+=liters;byProd[pid].a+=amt;
+    });
+    // per-product subtotals
+    form.querySelectorAll("[data-tot-liters]").forEach(function(el){
+        var pid=el.getAttribute("data-tot-liters"),t=byProd[pid]||{l:0,a:0};
+        el.textContent=nf2.format(t.l);
+    });
+    form.querySelectorAll("[data-tot-amount]").forEach(function(el){
+        var pid=el.getAttribute("data-tot-amount"),t=byProd[pid]||{l:0,a:0};
+        el.textContent=nf0.format(t.a);
+    });
+    totL.textContent=nf2.format(L);totA.textContent=nf0.format(A);btnA.textContent=nf0.format(A);
+}
+
+seg.addEventListener("click",function(e){
+    var b=e.target.closest("button");if(!b)return;
+    if(!b.classList.contains("on"))reload(b.dataset.shift);  // switch shift → reload
+});
+dateInput.addEventListener("change",function(){reload(document.getElementById("rcShift").value);});
+form.addEventListener("input",function(e){
+    if(e.target.matches("[data-closing],[data-opening],[data-rate]")){recalc();hideErr();}
+});
+
+var errBox=document.getElementById("rcErr");
+function hideErr(){errBox.style.display="none";errBox.innerHTML="";}
+function showErrors(list){
+    errBox.innerHTML='<b>Please fix the following — nothing was saved:</b><ul>'+
+        list.map(function(m){return '<li>'+m+'</li>';}).join('')+'</ul>';
+    errBox.style.display="block";
+    errBox.scrollIntoView({behavior:"smooth",block:"center"});
+}
+
+// client-side check of the obvious mistakes so we never even hit the server
+function clientErrors(){
+    var errs=[],any=false;
+    form.querySelectorAll("[data-row]").forEach(function(row){
+        var cRaw=row.querySelector("[data-closing]").value;
+        if(cRaw==="")return;            // untouched nozzle
+        any=true;
+        var label=(row.querySelector(".lbl")?row.querySelector(".lbl").textContent.trim():"Nozzle"),
+            prod=(row.querySelector(".prod")?row.querySelector(".prod").textContent.trim():"Fuel"),
+            o=parseFloat(row.querySelector("[data-opening]").value)||0,
+            c=parseFloat(cRaw),
+            r=rateFor(row.dataset.product);
+        if(isNaN(c)){errs.push(label+": closing reading is not a number.");return;}
+        if(c<o){errs.push(label+": closing ("+c+") is less than opening ("+o+").");return;}
+        if(c-o>0 && (!r || r<=0))errs.push(prod+" rate is required (enter the sale rate).");
+    });
+    if(!any)errs.push("Enter at least one closing reading before saving.");
+    // de-duplicate (e.g. same 'Petrol rate is required' from two nozzles)
+    return errs.filter(function(m,i){return errs.indexOf(m)===i;});
+}
+
+form.addEventListener("submit",function(e){
+    e.preventDefault();
+    if(form.dataset.done)return;   // shift already saved — view-only, nothing to submit
+    hideErr();
+    var ce=clientErrors();
+    if(ce.length){showErrors(ce);return;}      // keep all values, show error, no reload
+    saveBtn.disabled=true;saveBtn.textContent="Saving…";
+    fetch(form.action,{
+        method:"POST",
+        headers:{"X-Requested-With":"fetch"},
+        body:new FormData(form),
+    }).then(function(res){return res.json();}).then(function(data){
+        if(data.ok){window.location.href=data.redirect;return;}
+        saveBtn.disabled=false;saveBtn.textContent="Save Reading — Sale PKR "+btnA.textContent;
+        showErrors(data.errors||["Could not save. Please try again."]);
+    }).catch(function(){
+        saveBtn.disabled=false;saveBtn.textContent="Save Reading — Sale PKR "+btnA.textContent;
+        showErrors(["Network error — your readings are still here. Please try Save again."]);
+    });
+});
+recalc();
+})();
+</script>
+{% endblock %}

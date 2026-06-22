@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Purchase #{{ purchase.id }} &middot; Petrol Pumps{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('head_office.index') }}">Head Office</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.purchases_list') }}">Purchases</a></li>
+        <li class="breadcrumb-item active" aria-current="page">#{{ purchase.id }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Purchase #{{ purchase.id }}</h1>
+    <div>
+        <a href="{{ url_for('petrol_pumps.purchases_edit', purchase_id=purchase.id) }}" class="btn btn-outline-secondary">Edit</a>
+        <form method="post" action="{{ url_for('petrol_pumps.purchases_toggle_status', purchase_id=purchase.id) }}" class="d-inline">
+            {% if purchase.is_active %}
+            <button type="submit" class="btn btn-outline-warning">Deactivate</button>
+            {% else %}
+            <button type="submit" class="btn btn-outline-success">Activate</button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+{% if purchase.stock_posted %}
+<div class="alert alert-info">This purchase increased pump tank stock (stock posted).</div>
+{% else %}
+<div class="alert alert-light border">
+    This purchase did <strong>not</strong> affect tank stock
+    (status is not Received, tank not received, or it is inactive).
+</div>
+{% endif %}
+
+<table class="table">
+    <tbody>
+        <tr>
+            <th style="width: 220px;">Status</th>
+            <td>
+                {% if purchase.is_active %}<span class="badge bg-success">Active</span>
+                {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+            </td>
+        </tr>
+        <tr><th>Date</th><td>{{ purchase.purchase_date.strftime("%Y-%m-%d") }}</td></tr>
+        <tr><th>Petrol Pump</th><td>{{ purchase.petrol_pump.name }}</td></tr>
+        <tr><th>Vendor</th><td>{{ purchase.vendor.name }} ({{ purchase.vendor.vendor_type.value }})</td></tr>
+        <tr><th>Invoice Number</th><td>{{ purchase.invoice_number or "—" }}</td></tr>
+        <tr><th>Delivery Status</th><td>{{ purchase.delivery_status }}</td></tr>
+        <tr><th>Tank Received</th><td>{{ "Yes" if purchase.tank_received else "No" }}</td></tr>
+        <tr><th>Vehicle Number</th><td>{{ purchase.vehicle_number or "—" }}</td></tr>
+        <tr><th>Driver Name</th><td>{{ purchase.driver_name or "—" }}</td></tr>
+        <tr><th>Notes</th><td>{{ purchase.notes or "—" }}</td></tr>
+        <tr><th>Created By</th><td>{{ purchase.created_by.full_name if purchase.created_by else "—" }}</td></tr>
+    </tbody>
+</table>
+
+<h2 class="h5 mt-4 mb-2">Items</h2>
+<div class="table-responsive">
+    <table class="table table-bordered align-middle">
+        <thead>
+            <tr><th>Product</th><th>Tank</th><th class="text-end">Quantity (L)</th><th class="text-end">Rate</th><th class="text-end">Total</th></tr>
+        </thead>
+        <tbody>
+            {% for item in purchase.items %}
+            <tr>
+                <td>{{ item.product.name }}</td>
+                <td>
+                    {% if item.tank %}
+                    <a href="{{ url_for('petrol_pumps.tanks_view', tank_id=item.tank_id) }}">{{ item.tank.tank_name }}</a>
+                    {% else %}—{% endif %}
+                </td>
+                <td class="text-end">{{ "%.2f"|format(item.quantity_liters) }}</td>
+                <td class="text-end">{{ "%.2f"|format(item.rate) }}</td>
+                <td class="text-end">{{ "%.2f"|format(item.total_amount) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td colspan="4" class="text-end">Total</td>
+                <td class="text-end">{{ "%.2f"|format(purchase.total_amount) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+{% import "_attachments.html" as att with context %}
+{{ att.panel('pump_purchase', purchase.id, 'Invoices &amp; Documents') }}
+
+<a href="{{ url_for('petrol_pumps.purchases_list') }}" class="btn btn-link">&larr; Back to Purchases</a>
+{% endblock %}

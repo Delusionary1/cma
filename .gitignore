@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Environment & secrets
+.env
+
+# Database (incl. timestamped backups like app.db.bak-20260622-145125)
+*.db
+*.sqlite3
+*.db.bak*
+*.bak-*
+
+# Migrations cache (keep the migrations/ folder, ignore nothing critical)
+# (leave migrations/ tracked once created)
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Uploaded attachment files (BRD §18)
+uploads/
+
+# Local agent/editor state
+.claude/
+
+# Nested clone of the remote (do not commit as submodule)
+cma/

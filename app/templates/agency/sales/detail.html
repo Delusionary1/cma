@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Agency Sale #{{ sale.id }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('agency.index') }}">Oil Agencies</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('agency.sales_list') }}">Sales</a></li>
+        <li class="breadcrumb-item active" aria-current="page">#{{ sale.id }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Agency Sale #{{ sale.id }}</h1>
+    <div>
+        <a href="{{ url_for('agency.sales_edit', sale_id=sale.id) }}" class="btn btn-outline-secondary">Edit</a>
+        <form method="post" action="{{ url_for('agency.sales_toggle_status', sale_id=sale.id) }}" class="d-inline">
+            {% if sale.is_active %}<button class="btn btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-outline-success">Activate</button>{% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Total Sale</div><div class="h4">{{ "%.2f"|format(sale.total_sale_amount) }}</div></div></div></div>
+    <div class="col-md-3"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Cost</div><div class="h4">{{ "%.2f"|format(sale.total_purchase_amount) }}</div></div></div></div>
+    <div class="col-md-3"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Carriage + Other</div><div class="h4">{{ "%.2f"|format(sale.carriage_cost + sale.other_expense) }}</div></div></div></div>
+    <div class="col-md-3"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Net Profit</div><div class="h4 {{ 'text-danger' if sale.net_profit < 0 else 'text-success' }}">{{ "%.2f"|format(sale.net_profit) }}</div></div></div></div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr><th style="width:220px;">Status</th><td>{% if sale.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td></tr>
+        <tr><th>Date</th><td>{{ sale.sale_date.strftime("%Y-%m-%d") }}</td></tr>
+        <tr><th>Customer</th><td>{{ sale.customer.name }}</td></tr>
+        <tr><th>Product</th><td>{{ sale.product.name }}</td></tr>
+        <tr><th>Quantity</th><td>{{ "%.2f"|format(sale.quantity) }}</td></tr>
+        <tr><th>Purchase Rate / Sale Rate</th><td>{{ "%.2f"|format(sale.purchase_rate) }} / {{ "%.2f"|format(sale.sale_rate) }}</td></tr>
+        <tr><th>Delivery Method</th><td>{{ sale.delivery_method or "—" }}</td></tr>
+        <tr><th>Vehicle / Driver</th><td>{{ sale.vehicle_number or "—" }} / {{ sale.driver_name or "—" }}</td></tr>
+        <tr><th>Payment</th><td>{{ sale.payment_method or "—" }} &mdash; {{ sale.payment_status }}</td></tr>
+        <tr><th>Notes</th><td>{{ sale.notes or "—" }}</td></tr>
+        <tr><th>Created By</th><td>{{ sale.created_by.full_name if sale.created_by else "—" }}</td></tr>
+    </tbody>
+</table>
+
+{% import "_approval.html" as appr with context %}
+{{ appr.banner('agency_sale', sale.id) }}
+
+<a href="{{ url_for('agency.sales_list') }}" class="btn btn-link">&larr; Back to Sales</a>
+{% endblock %}

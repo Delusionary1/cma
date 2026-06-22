@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+
+{% block title %}Purchase Console · Petrol Pumps{% endblock %}
+
+{% block content %}
+<style>
+/* ============ PURCHASE CONSOLE (scoped) ============ */
+.pc-wrap{position:relative;border-radius:22px;overflow:hidden;
+    background:linear-gradient(150deg,#0C1017,#121823 55%,#161E2B);
+    border:1px solid rgba(255,255,255,.08);padding:26px 28px 30px;color:#E8EBF0;}
+.pc-wrap::before{content:"";position:absolute;right:-160px;top:-180px;width:480px;height:480px;border-radius:50%;
+    background:radial-gradient(circle,rgba(245,165,36,.16),transparent 65%);pointer-events:none;}
+.pc-wrap::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+    background-size:46px 46px;mask-image:radial-gradient(ellipse 80% 90% at 20% 10%,#000 25%,transparent 75%);}
+.pc-wrap>*{position:relative;z-index:1}
+
+.pc-eyebrow{font-family:var(--fm);font-size:10.5px;letter-spacing:.26em;color:#FFB84A;text-transform:uppercase;
+    display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.pc-eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:#F5A524;box-shadow:0 0 10px #F5A524}
+.pc-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.pc-head h1{font-family:var(--fl);color:#fff;font-size:26px;margin:0;letter-spacing:.01em}
+.pc-head h1 b{color:#FFC04D}
+.pc-head .pc-date{font-family:var(--fm);font-size:11px;letter-spacing:.14em;color:#9AA4B6}
+
+/* pump selector bar */
+.pc-pumps{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:26px;
+    background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:8px}
+.pc-pump{display:flex;align-items:center;gap:10px;text-decoration:none;
+    padding:11px 20px;border-radius:11px;color:#B9C2D0;font-weight:600;font-size:13.5px;
+    transition:all .3s var(--ease);border:1px solid transparent}
+.pc-pump svg{width:17px;height:17px;flex-shrink:0}
+.pc-pump:hover{background:rgba(255,255,255,.06);color:#fff}
+.pc-pump.on{background:linear-gradient(92deg,#FFC857,#F5A524 60%,#FF8A1E);color:#16110A;
+    box-shadow:0 6px 20px rgba(245,165,36,.4)}
+
+/* tanks grid */
+.pc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+.pc-tank{position:relative;border-radius:18px;cursor:pointer;
+    background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.10);
+    padding:22px 20px 18px;transition:transform .35s var(--ease),border-color .3s,box-shadow .35s;
+    opacity:0;transform:translateY(16px);animation:pcIn .6s var(--ease) forwards;
+    display:flex;flex-direction:column;align-items:center;text-align:center}
+@keyframes pcIn{to{opacity:1;transform:none}}
+.pc-tank:hover{transform:translateY(-5px);border-color:var(--tc,#F5A524);
+    box-shadow:0 18px 44px rgba(0,0,0,.45),0 0 30px color-mix(in srgb,var(--tc,#F5A524) 22%,transparent)}
+.pc-tank-svg{margin-bottom:6px;filter:drop-shadow(0 10px 20px rgba(0,0,0,.5))}
+.pc-tank:hover .pc-tank-svg{animation:pcBob .7s var(--ease)}
+@keyframes pcBob{30%{transform:translateY(-4px) scale(1.04)}70%{transform:translateY(1px)}}
+.pc-tank h3{font-family:var(--fd);font-size:16.5px;font-weight:700;color:#fff;margin:0 0 2px}
+.pc-tank .prod{font-family:var(--fm);font-size:9.5px;letter-spacing:.16em;color:var(--tc,#FFB84A);text-transform:uppercase}
+.pc-tank .stock{margin-top:12px;width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+    border-radius:11px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center}
+.pc-tank .stock .lab{font-family:var(--fm);font-size:8.5px;letter-spacing:.14em;color:#8C96A8;text-transform:uppercase}
+.pc-tank .stock .val{font-family:var(--fd);font-weight:700;font-size:15px;color:#fff}
+.pc-tank .stock .val small{font-size:9.5px;color:#8C96A8;font-weight:600}
+.pc-tank .recv{margin-top:8px;font-family:var(--fm);font-size:10px;color:#7CEBAF;letter-spacing:.06em;min-height:14px}
+.pc-cta{margin-top:14px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+    border-radius:11px;padding:10px;font-weight:700;font-size:12.5px;letter-spacing:.04em;
+    background:rgba(245,165,36,.12);border:1px solid rgba(245,165,36,.35);color:#FFC857;transition:all .3s var(--ease)}
+.pc-tank:hover .pc-cta{background:linear-gradient(92deg,#FFC857,#F5A524 60%,#FF8A1E);color:#16110A;box-shadow:0 6px 18px rgba(245,165,36,.4)}
+.pc-cta svg{width:15px;height:15px}
+
+/* lubricants card sits in same grid but a touch different */
+.pc-tank.lube{--tc:#6F86FF}
+.pc-section-lab{font-family:var(--fm);font-size:10px;letter-spacing:.22em;color:#8C96A8;text-transform:uppercase;
+    margin:26px 0 12px;display:flex;align-items:center;gap:12px}
+.pc-section-lab::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(255,255,255,.12),transparent)}
+
+.pc-empty{padding:46px 20px;text-align:center;color:#9AA4B6;font-size:14px;
+    background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.15);border-radius:16px}
+.pc-empty a{color:#FFC857;font-weight:600}
+
+/* modal (shared look with reading console) */
+.pcm-back{position:fixed;inset:0;z-index:1990;background:rgba(5,7,10,.72);backdrop-filter:blur(6px);
+    opacity:0;pointer-events:none;transition:opacity .3s}
+.pcm-back.open{opacity:1;pointer-events:auto}
+.pcm{position:fixed;z-index:2000;left:50%;top:50%;width:min(540px,calc(100vw - 28px));max-height:calc(100vh - 40px);overflow:auto;
+    transform:translate(-50%,-46%) scale(.96);opacity:0;pointer-events:none;
+    background:linear-gradient(160deg,#10151E,#151C28);border:1px solid rgba(255,255,255,.12);
+    border-radius:22px;box-shadow:0 40px 90px rgba(0,0,0,.6);color:#E8EBF0;
+    transition:transform .35s var(--ease),opacity .3s}
+.pcm.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+.pcm-head{display:flex;align-items:center;gap:14px;padding:22px 26px 0}
+.pcm-head .ic{width:46px;height:46px;border-radius:13px;flex-shrink:0;display:grid;place-items:center;
+    background:linear-gradient(92deg,#FFC857,#F5A524 60%,#FF8A1E);box-shadow:0 0 24px rgba(245,165,36,.45)}
+.pcm-head .ic svg{width:24px;height:24px}
+.pcm-head h2{font-family:var(--fl);font-size:21px;color:#fff;margin:0;line-height:1.2}
+.pcm-head small{display:block;font-family:var(--fm);font-size:10px;letter-spacing:.16em;color:#9AA4B6;text-transform:uppercase;margin-top:3px}
+.pcm-x{margin-left:auto;background:none;border:none;color:#8C96A8;font-size:26px;line-height:1;cursor:pointer;padding:4px 8px}
+.pcm-x:hover{color:#fff}
+.pcm-body{padding:20px 26px 26px}
+.pcm-f{margin-bottom:15px}
+.pcm-f.half{display:inline-block;width:calc(50% - 6px)}
+.pcm-f.half + .pcm-f.half{margin-left:10px}
+.pcm-f label{display:block;font-family:var(--fm);font-size:9px;letter-spacing:.16em;color:#9AA4B6;text-transform:uppercase;margin-bottom:6px}
+.pcm-f input,.pcm-f select{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
+    border-radius:11px;color:#F4F6F9;padding:11px 13px;font-size:14px;font-family:var(--fb);outline:none;color-scheme:dark}
+/* force the native dropdown list to be dark too (otherwise options can render
+   white-on-white on Windows) */
+.pcm-f select option,.pcm-f select optgroup{background:#141A24;color:#F4F6F9}
+.pcm-f input.big{font-family:var(--fm);font-size:16px;font-weight:600}
+.pcm-f input:focus,.pcm-f select:focus{border-color:rgba(245,165,36,.6);box-shadow:0 0 0 4px rgba(245,165,36,.12)}
+.pcm-f.qty input,.pcm-f.rate input{border-color:rgba(245,165,36,.3);background:rgba(245,165,36,.06)}
+.pcm-total{display:flex;align-items:center;justify-content:space-between;gap:14px;
+    background:rgba(245,165,36,.08);border:1px solid rgba(245,165,36,.3);border-radius:14px;padding:14px 18px;margin:6px 0 16px}
+.pcm-total .tl{font-family:var(--fm);font-size:9.5px;letter-spacing:.18em;color:#CBA462;text-transform:uppercase}
+.pcm-total .tv{font-family:var(--fd);font-weight:700;font-size:22px;color:#FFC857}
+.pcm-total .tv small{font-size:11px;color:#CBA462;font-weight:600;margin-right:4px}
+.pcm-save{width:100%;border:0;border-radius:13px;padding:15px;cursor:pointer;font:700 15px/1 var(--fb);letter-spacing:.03em;color:#16110A;
+    background:linear-gradient(92deg,#FFC857,#F5A524 55%,#FF8A1E);box-shadow:0 10px 28px rgba(245,165,36,.4);transition:transform .25s,box-shadow .3s}
+.pcm-save:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(245,165,36,.5)}
+.pcm-save:active{transform:scale(.98)}
+.pcm-save[disabled]{opacity:.6;pointer-events:none}
+.pcm-note{font-size:11px;color:#8C96A8;text-align:center;margin-top:11px}
+.pcm-note b{color:#C3CBD8}
+@media(max-width:560px){.pcm-f.half{width:100%;display:block}.pcm-f.half+.pcm-f.half{margin-left:0}}
+@media(prefers-reduced-motion:reduce){.pc-tank{opacity:1!important;transform:none!important}}
+</style>
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('head_office.index') }}">Head Office</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Purchase Console</li>
+    </ol>
+</nav>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+    <linearGradient id="pcTankBody" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#33405A"/><stop offset=".5" stop-color="#27324A"/><stop offset="1" stop-color="#1B2438"/>
+    </linearGradient>
+    <linearGradient id="pcFire" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#FFC857"/><stop offset=".6" stop-color="#F5A524"/><stop offset="1" stop-color="#FF8A1E"/>
+    </linearGradient>
+</defs></svg>
+
+<div class="pc-wrap">
+    <div class="pc-head">
+        <div>
+            <div class="pc-eyebrow">Petrol Pump · PSO Stock Intake</div>
+            <h1>Purchase <b>Console</b></h1>
+        </div>
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <span class="pc-date">{{ today.strftime("%A, %d %B %Y")|upper }}</span>
+            <a href="{{ url_for('petrol_pumps.purchases_list') }}" class="btn btn-outline-secondary btn-sm">History</a>
+        </div>
+    </div>
+
+    {% if pumps %}
+    <div class="pc-pumps">
+        {% for p in pumps %}
+        <a class="pc-pump {{ 'on' if pump and p.id == pump.id }}"
+           href="{{ url_for('petrol_pumps.purchases_console', pump=p.id) }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                <path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16M4 21h11M15 9h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V9.5L19 7"/><path d="M7 7h5v4H7z"/>
+            </svg>
+            {{ p.name }}
+        </a>
+        {% endfor %}
+    </div>
+
+    {% if tanks %}
+    <div class="pc-section-lab">Fuel Tanks · {{ pump.name }}</div>
+    <div class="pc-grid">
+        {% for tk in tanks %}
+        {% set t = tk.t %}
+        {% set pname = t.product.name|lower %}
+        {% set tcolor = '#F5A524' if 'petrol' in pname else ('#22C7DE' if 'diesel' in pname else ('#9B7FE8' if 'octane' in pname else '#F5A524')) %}
+        <div class="pc-tank" style="--tc:{{ tcolor }}" role="button" tabindex="0"
+             data-mode="tank" data-tank-id="{{ t.id }}" data-title="{{ t.tank_name }}"
+             data-product="{{ t.product.name }}" data-rate="{{ tk.rate }}">
+            <svg class="pc-tank-svg" width="92" height="88" viewBox="0 0 110 104" fill="none">
+                <ellipse cx="55" cy="95" rx="40" ry="7" fill="rgba(0,0,0,.35)"/>
+                <rect x="13" y="30" width="84" height="54" rx="27" fill="url(#pcTankBody)" stroke="rgba(255,255,255,.14)"/>
+                <ellipse cx="13" cy="57" rx="9" ry="27" fill="#1B2438" stroke="rgba(255,255,255,.10)"/>
+                <ellipse cx="97" cy="57" rx="9" ry="27" fill="#2B3850"/>
+                <rect x="30" y="46" width="56" height="22" rx="7" fill="{{ tcolor }}" opacity=".9"/>
+                <rect x="46" y="10" width="18" height="22" rx="4" fill="#26324A" stroke="rgba(255,255,255,.12)"/>
+                <rect x="50" y="4" width="10" height="9" rx="3" fill="url(#pcFire)"/>
+                <circle cx="79" cy="57" r="8" fill="#0A0E14" stroke="rgba(255,255,255,.18)"/>
+                <path d="M79 57 L79 51" stroke="{{ tcolor }}" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <h3>{{ t.tank_name }}</h3>
+            <span class="prod">{{ t.product.name }}</span>
+            <div class="stock">
+                <span class="lab">In Tank</span>
+                <span class="val">{{ '{:,.0f}'.format(t.current_stock_liters or 0) }} <small>L</small></span>
+            </div>
+            <div class="recv">{% if tk.received_today %}+{{ '{:,.0f}'.format(tk.received_today) }} L received today{% endif %}</div>
+            <div class="pc-cta">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
+                Add Purchase
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if lubricants %}
+    <div class="pc-section-lab">Lubricants</div>
+    <div class="pc-grid">
+        {% for lp in lubricants %}
+        <div class="pc-tank lube" role="button" tabindex="0"
+             data-mode="lubricant" data-product-id="{{ lp.id }}" data-title="{{ lp.name }}"
+             data-product="{{ lp.name }}" data-rate="{{ lp.default_purchase_rate or '' }}">
+            <svg class="pc-tank-svg" width="74" height="88" viewBox="0 0 80 104" fill="none">
+                <ellipse cx="40" cy="96" rx="28" ry="6" fill="rgba(0,0,0,.35)"/>
+                <rect x="16" y="26" width="48" height="64" rx="9" fill="url(#pcTankBody)" stroke="rgba(255,255,255,.14)"/>
+                <rect x="30" y="10" width="20" height="18" rx="4" fill="#26324A" stroke="rgba(255,255,255,.12)"/>
+                <rect x="33" y="5" width="14" height="8" rx="3" fill="#6F86FF"/>
+                <rect x="22" y="44" width="36" height="26" rx="5" fill="#0A0E14" stroke="rgba(111,134,255,.5)"/>
+                <text x="40" y="61" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" font-weight="600" fill="#9DB0FF">OIL</text>
+            </svg>
+            <h3>{{ lp.name }}</h3>
+            <span class="prod" style="color:#9DB0FF">Lubricant</span>
+            <div class="pc-cta" style="background:rgba(111,134,255,.14);border-color:rgba(111,134,255,.4);color:#9DB0FF">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
+                Add Purchase
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="pc-empty">No active tanks for <b>{{ pump.name if pump }}</b> —
+        <a href="{{ url_for('petrol_pumps.tanks_list') }}">add tanks in Pump Setup</a>.</div>
+    {% endif %}
+    {% else %}
+    <div class="pc-empty">No active petrol pumps. <a href="{{ url_for('master_data.index') }}">Add a pump in Master Data</a>.</div>
+    {% endif %}
+</div>
+
+{# ============ purchase modal ============ #}
+<div class="pcm-back" id="pcmBack"></div>
+<div class="pcm" id="pcm" role="dialog" aria-modal="true">
+    <form method="post" action="{{ url_for('petrol_pumps.purchases_console_save') }}" id="pcmForm">
+        <input type="hidden" name="petrol_pump_id" value="{{ pump.id if pump }}">
+        <input type="hidden" name="mode" id="pcmMode">
+        <input type="hidden" name="tank_id" id="pcmTankId">
+        <input type="hidden" name="product_id" id="pcmProductId">
+        <div class="pcm-head">
+            <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#16110A" stroke-width="2"><path d="M3 8h13v8H3zM16 10h3l2 2.5V16h-5"/><circle cx="7" cy="18" r="1.8"/><circle cx="18" cy="18" r="1.8"/></svg></span>
+            <div>
+                <h2 id="pcmTitle">Tank</h2>
+                <small>{{ pump.name if pump }} · pump purchase</small>
+            </div>
+            <button type="button" class="pcm-x" id="pcmClose" aria-label="Close">×</button>
+        </div>
+        <div class="pcm-body">
+            <div class="pcm-f">
+                <label>Vendor (who we buy from / owe) <span style="color:#FF8A8A">*</span></label>
+                <select name="vendor_id" id="pcmVendor" required>
+                    <option value="">— Select vendor —</option>
+                    {% for v in vendors %}
+                    <option value="{{ v.id }}" {{ "selected" if default_vendor and v.id == default_vendor.id else "" }}>
+                        {{ v.name }}{{ ' · ' ~ v.vendor_type.value if v.vendor_type }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="pcm-f qty">
+                <label id="pcmQtyLab">Quantity received (liters)</label>
+                <input type="number" step="0.01" min="0" name="quantity" id="pcmQty" class="big" placeholder="0" data-calc autocomplete="off">
+            </div>
+            <div class="pcm-f rate half">
+                <label>Purchase rate / unit</label>
+                <input type="number" step="0.01" min="0" name="rate" id="pcmRate" data-calc autocomplete="off">
+            </div>
+            <div class="pcm-f half">
+                <label>Purchase date</label>
+                <input type="date" name="purchase_date" value="{{ today.isoformat() }}" required>
+            </div>
+            <div class="pcm-f">
+                <label>Delivery vehicle (from fleet)</label>
+                <select name="vehicle_id" id="pcmVehicle">
+                    <option value="">— None / not via fleet —</option>
+                    {% for v in vehicles %}
+                    <option value="{{ v.id }}" data-driver="{{ v.driver.name if v.driver else '' }}">
+                        {{ v.vehicle_number }}{{ ' · ' ~ v.vehicle_type if v.vehicle_type }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="pcm-f">
+                <label>Driver name</label>
+                <input type="text" name="driver_name" id="pcmDriver" placeholder="Driver who brought the load" autocomplete="off">
+            </div>
+            <div class="pcm-total">
+                <span class="tl">Total Purchase</span>
+                <span class="tv"><small>PKR</small><span id="pcmTotal">0</span></span>
+            </div>
+            <button type="submit" class="pcm-save" id="pcmSave">Save Purchase — PKR <span id="pcmBtn">0</span></button>
+            <div class="pcm-note">The full amount becomes <b>payable to the selected vendor</b> (see Head Office → Vendor Payables) · fuel stock posts to the tank automatically.</div>
+        </div>
+    </form>
+</div>
+
+<script>
+(function(){
+"use strict";
+var back=document.getElementById("pcmBack"),modal=document.getElementById("pcm"),
+    title=document.getElementById("pcmTitle"),mode=document.getElementById("pcmMode"),
+    tankId=document.getElementById("pcmTankId"),prodId=document.getElementById("pcmProductId"),
+    qty=document.getElementById("pcmQty"),rate=document.getElementById("pcmRate"),
+    qtyLab=document.getElementById("pcmQtyLab"),total=document.getElementById("pcmTotal"),
+    btn=document.getElementById("pcmBtn"),veh=document.getElementById("pcmVehicle"),
+    driver=document.getElementById("pcmDriver"),saveBtn=document.getElementById("pcmSave");
+var nf0=new Intl.NumberFormat("en",{maximumFractionDigits:0});
+
+function recalc(){
+    var q=parseFloat(qty.value)||0,r=parseFloat(rate.value)||0,t=q*r;
+    total.textContent=nf0.format(t);btn.textContent=nf0.format(t);
+}
+function open(card){
+    var d=card.dataset;
+    mode.value=d.mode;title.textContent=d.title;
+    tankId.value=d.mode==="tank"?d.tankId:"";
+    prodId.value=d.mode==="lubricant"?d.productId:"";
+    qtyLab.textContent=d.mode==="lubricant"?"Quantity received (units)":"Quantity received (liters)";
+    qty.value="";rate.value=d.rate||"";
+    recalc();
+    back.classList.add("open");modal.classList.add("open");
+    setTimeout(function(){qty.focus()},250);
+}
+function close(){back.classList.remove("open");modal.classList.remove("open");}
+
+document.querySelectorAll(".pc-tank").forEach(function(card){
+    card.addEventListener("click",function(){open(card)});
+    card.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();open(card)}});
+});
+back.addEventListener("click",close);
+document.getElementById("pcmClose").addEventListener("click",close);
+document.addEventListener("keydown",function(e){if(e.key==="Escape")close()});
+qty.addEventListener("input",recalc);rate.addEventListener("input",recalc);
+/* prefill driver from the chosen vehicle (still editable) */
+veh.addEventListener("change",function(){
+    var opt=veh.options[veh.selectedIndex],dn=opt?opt.getAttribute("data-driver"):"";
+    if(dn && !driver.value)driver.value=dn;
+});
+document.getElementById("pcmForm").addEventListener("submit",function(){
+    saveBtn.disabled=true;saveBtn.textContent="Saving…";
+});
+})();
+</script>
+{% endblock %}

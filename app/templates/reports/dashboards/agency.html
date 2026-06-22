@@ -1,0 +1,23 @@
+{% extends "reports/dashboards/_base.html" %}
+{% import "reports/dashboards/_macros.html" as w %}
+
+{% block dash %}
+<div class="dgrid">
+    {{ w.kpi("Total Sale", d.summary.sale, "#F5A524") }}
+    {{ w.kpi("Purchases", d.summary.purchases, "#A16207") }}
+    {{ w.kpi("Net Profit", d.summary.net, "#15803D") }}
+    {{ w.kpi("Receivable (unpaid)", d.outstanding, "#BE123C") }}
+    {{ w.kpi("Payable (unpaid)", d.payable, "#6D4FC2") }}
+</div>
+
+<div class="dpanel-grid">
+    <div class="dpanel">
+        <h2>Product-wise Sale (LDO / Kerosene)</h2>
+        {{ w.bars(d.products, "name", "amount", "#0E7490") }}
+    </div>
+    <div class="dpanel">
+        <h2>Product-wise Quantity</h2>
+        {{ w.bars(d.products, "name", "qty", "#1D4ED8", money=False) }}
+    </div>
+</div>
+{% endblock %}

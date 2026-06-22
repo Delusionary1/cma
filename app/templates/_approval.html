@@ -1,0 +1,65 @@
+{# Approval status banner for a detail page. Usage:
+   {% import "_approval.html" as appr with context %}
+   {{ appr.banner('ho_expense', expense.id) }}
+   Shows the current status; approvers get inline approve/reject/reopen. #}
+{% macro banner(entity_type, entity_id) %}
+{% set a = approval_for_entity(entity_type, entity_id) %}
+{% if a %}
+{% set ret = request.full_path %}
+<div class="appr-banner appr-{{ a.status|lower }}">
+    <div class="appr-ic">
+        {% if a.status == 'Approved' %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>
+        {% elif a.status == 'Rejected' %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        {% else %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        {% endif %}
+    </div>
+    <div class="appr-txt">
+        <b>
+            {% if a.status == 'Approved' %}Approved{% elif a.status == 'Rejected' %}Rejected{% else %}Pending approval{% endif %}
+        </b>
+        <span>
+            {% if a.status == 'Pending' %}This entry is awaiting manager sign-off.
+            {% elif a.status == 'Approved' %}Signed off by {{ a.approved_by.full_name if a.approved_by else "—" }}{% if a.approved_at %} on {{ a.approved_at.strftime("%Y-%m-%d") }}{% endif %}.
+            {% else %}Rejected by {{ a.approved_by.full_name if a.approved_by else "—" }}{% if a.rejection_reason %} — {{ a.rejection_reason }}{% endif %}.
+            {% endif %}
+        </span>
+    </div>
+    {% if can_approve_entries %}
+    <div class="appr-act">
+        {% if a.status == 'Pending' %}
+        <form method="post" action="{{ url_for('approvals.approve', approval_id=a.id) }}" class="d-inline">
+            <input type="hidden" name="return_url" value="{{ ret }}">
+            <button class="btn btn-sm btn-success">Approve</button>
+        </form>
+        <form method="post" action="{{ url_for('approvals.reject', approval_id=a.id) }}" class="d-inline d-flex gap-1">
+            <input type="hidden" name="return_url" value="{{ ret }}">
+            <input type="text" name="rejection_reason" class="form-control form-control-sm" placeholder="Reason" style="max-width:150px">
+            <button class="btn btn-sm btn-danger">Reject</button>
+        </form>
+        {% else %}
+        <form method="post" action="{{ url_for('approvals.reopen', approval_id=a.id) }}" class="d-inline">
+            <input type="hidden" name="return_url" value="{{ ret }}">
+            <button class="btn btn-sm btn-outline-secondary">Reopen</button>
+        </form>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.appr-banner{display:flex;align-items:center;gap:14px;border-radius:13px;padding:13px 18px;margin:14px 0;border:1px solid}
+.appr-banner .appr-ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex-shrink:0;background:#fff}
+.appr-banner .appr-ic svg{width:18px;height:18px}
+.appr-txt{flex:1;min-width:0;line-height:1.3}
+.appr-txt b{display:block;font-size:14px}
+.appr-txt span{font-size:12.5px;color:var(--dim,#69707F)}
+.appr-act{display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0}
+.appr-pending{background:#FEF6E0;border-color:rgba(161,98,7,.3)}.appr-pending .appr-ic{color:#A16207}.appr-pending b{color:#8A5606}
+.appr-approved{background:#E8F7EE;border-color:rgba(21,128,61,.3)}.appr-approved .appr-ic{color:#15803D}.appr-approved b{color:#15803D}
+.appr-rejected{background:#FDEDED;border-color:rgba(192,52,52,.3)}.appr-rejected .appr-ic{color:#C03434}.appr-rejected b{color:#C03434}
+</style>
+{% endif %}
+{% endmacro %}

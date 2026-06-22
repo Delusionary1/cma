@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}Petrol Pumps · Master Data{% endblock %}
+
+{% block content %}
+<style>
+.pk-wrap{position:relative;border-radius:22px;overflow:hidden;
+    background:linear-gradient(150deg,#0C1017,#121823 55%,#161E2B);
+    border:1px solid rgba(255,255,255,.08);padding:26px 28px 30px;color:#E8EBF0}
+.pk-wrap::before{content:"";position:absolute;right:-160px;top:-180px;width:480px;height:480px;border-radius:50%;
+    background:radial-gradient(circle,rgba(245,165,36,.16),transparent 65%);pointer-events:none}
+.pk-wrap::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+    background-size:46px 46px;mask-image:radial-gradient(ellipse 80% 90% at 20% 10%,#000 25%,transparent 75%)}
+.pk-wrap>*{position:relative;z-index:1}
+.pk-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.pk-eyebrow{font-family:var(--fm);font-size:10.5px;letter-spacing:.26em;color:#FFB84A;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.pk-eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:#F5A524;box-shadow:0 0 10px #F5A524}
+.pk-head h1{font-family:var(--fl);color:#fff;font-size:26px;margin:0;letter-spacing:.01em}
+.pk-head h1 b{color:#FFC04D}
+.pk-add{border:0;border-radius:12px;padding:11px 20px;font-weight:700;font-size:13.5px;color:#16110A;cursor:pointer;
+    background:linear-gradient(92deg,#FFC857,#F5A524 60%,#FF8A1E);box-shadow:0 6px 18px rgba(245,165,36,.4);display:inline-flex;align-items:center;gap:8px}
+.pk-add svg{width:16px;height:16px}
+
+.pk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px}
+.pk-pump{border-radius:18px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.10);
+    padding:20px;opacity:0;transform:translateY(16px);animation:pkIn .6s var(--ease) forwards}
+@keyframes pkIn{to{opacity:1;transform:none}}
+.pk-pump-top{display:flex;gap:14px;align-items:center;margin-bottom:16px}
+.pk-pic{width:46px;height:46px;border-radius:13px;flex-shrink:0;display:grid;place-items:center;
+    background:linear-gradient(135deg,#2A3344,#1A212E);border:1px solid rgba(255,255,255,.12);color:#FFC857}
+.pk-pic svg{width:24px;height:24px}
+.pk-pump-top h3{font-family:var(--fd);font-size:17px;font-weight:700;color:#fff;margin:0}
+.pk-pump-top .loc{font-family:var(--fm);font-size:10.5px;letter-spacing:.06em;color:#9AA4B6;margin-top:2px;display:flex;align-items:center;gap:5px}
+.pk-pump-top .loc svg{width:12px;height:12px}
+
+.pk-sec{margin-top:14px}
+.pk-sec-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.pk-sec-h .t{font-family:var(--fm);font-size:9.5px;letter-spacing:.16em;color:#8C96A8;text-transform:uppercase}
+.pk-mini{border:0;background:rgba(255,255,255,.07);color:#FFC857;border-radius:8px;padding:5px 11px;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .25s}
+.pk-mini:hover{background:rgba(245,165,36,.18)}
+.pk-mini svg{width:12px;height:12px}
+.pk-foot{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)}
+.pk-mini.pk-edit{color:#9AD9FF;text-decoration:none}
+.pk-mini.pk-del{color:#FF9B9B;background:rgba(255,107,107,.10)}
+.pk-mini.pk-del:hover{background:rgba(255,107,107,.20)}
+.pk-chips{display:flex;flex-wrap:wrap;gap:7px}
+.pk-chip{display:flex;align-items:center;gap:7px;font-size:11.5px;color:#D7DCE5;background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.09);border-radius:9px;padding:6px 11px}
+.pk-chip i{width:8px;height:8px;border-radius:3px;background:var(--cc,#8C96A8);box-shadow:0 0 8px var(--cc,#8C96A8)}
+.pk-chip b{color:#F4F6F9;font-weight:600}
+.pk-chip .cap{font-family:var(--fm);font-size:10px;color:#9AA4B6;margin-left:2px}
+.pk-none{font-size:11.5px;color:#8C96A8;font-style:italic}
+
+.pk-empty{padding:46px 20px;text-align:center;color:#9AA4B6;font-size:14px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.15);border-radius:16px}
+
+/* modals */
+.pm-back{position:fixed;inset:0;z-index:1990;background:rgba(5,7,10,.72);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .3s}
+.pm-back.open{opacity:1;pointer-events:auto}
+.pm{position:fixed;z-index:2000;left:50%;top:50%;width:min(460px,calc(100vw - 28px));
+    transform:translate(-50%,-46%) scale(.96);opacity:0;pointer-events:none;
+    background:linear-gradient(160deg,#10151E,#151C28);border:1px solid rgba(255,255,255,.12);
+    border-radius:22px;box-shadow:0 40px 90px rgba(0,0,0,.6);color:#E8EBF0;transition:transform .35s var(--ease),opacity .3s}
+.pm.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+.pm-h{display:flex;align-items:center;gap:13px;padding:22px 26px 0}
+.pm-h .ic{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:grid;place-items:center;background:linear-gradient(92deg,#FFC857,#F5A524 60%,#FF8A1E);box-shadow:0 0 22px rgba(245,165,36,.45)}
+.pm-h .ic svg{width:22px;height:22px}
+.pm-h h2{font-family:var(--fl);font-size:20px;color:#fff;margin:0}
+.pm-h small{display:block;font-family:var(--fm);font-size:9.5px;letter-spacing:.14em;color:#9AA4B6;text-transform:uppercase;margin-top:3px}
+.pm-x{margin-left:auto;background:none;border:none;color:#8C96A8;font-size:26px;line-height:1;cursor:pointer;padding:4px 8px}
+.pm-x:hover{color:#fff}
+.pm-body{padding:18px 26px 24px}
+.pm-f{margin-bottom:15px}
+.pm-f label{display:block;font-family:var(--fm);font-size:9px;letter-spacing:.16em;color:#9AA4B6;text-transform:uppercase;margin-bottom:6px}
+.pm-f input,.pm-f select{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:11px;
+    color:#F4F6F9;padding:11px 13px;font-size:14px;font-family:var(--fb);outline:none;color-scheme:dark}
+.pm-f input:focus,.pm-f select:focus{border-color:rgba(245,165,36,.6);box-shadow:0 0 0 4px rgba(245,165,36,.12)}
+.pm-fixed{font-family:var(--fm);font-size:11px;color:#7CEBAF;background:rgba(61,220,132,.10);border:1px solid rgba(61,220,132,.3);border-radius:10px;padding:9px 12px;margin-bottom:15px}
+.pm-save{width:100%;border:0;border-radius:13px;padding:14px;cursor:pointer;font:700 15px/1 var(--fb);color:#16110A;
+    background:linear-gradient(92deg,#FFC857,#F5A524 55%,#FF8A1E);box-shadow:0 10px 28px rgba(245,165,36,.4)}
+.pm-save:hover{transform:translateY(-2px)}
+@media(prefers-reduced-motion:reduce){.pk-pump{opacity:1!important;transform:none!important}}
+</style>
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Petrol Pumps</li>
+    </ol>
+</nav>
+
+<div class="pk-wrap">
+    <div class="pk-head">
+        <div>
+            <div class="pk-eyebrow">Master Data · Pump Structure</div>
+            <h1>Petrol <b>Pumps</b></h1>
+        </div>
+        <button type="button" class="pk-add" id="addPumpBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#16110A" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+            Add New Pump
+        </button>
+    </div>
+
+    {% if cards %}
+    <div class="pk-grid">
+        {% for c in cards %}
+        {% set p = c.p %}
+        <div class="pk-pump">
+            <div class="pk-pump-top">
+                <span class="pk-pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16M4 21h11M15 9h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V9.5L19 7"/><path d="M7 7h5v4H7z"/></svg></span>
+                <div>
+                    <h3>{{ p.name }}</h3>
+                    <div class="loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>{{ p.location or 'No location set' }}</div>
+                </div>
+            </div>
+
+            <div class="pk-sec">
+                <div class="pk-sec-h">
+                    <span class="t">Tanks ({{ c.tanks|length }})</span>
+                    <button type="button" class="pk-mini js-add-tank" data-pump="{{ p.id }}" data-name="{{ p.name }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Add Tank</button>
+                </div>
+                {% if c.tanks %}
+                <div class="pk-chips">
+                    {% for t in c.tanks %}
+                    {% set pn = t.product.name|lower %}
+                    {% set tc = '#F5A524' if 'petrol' in pn else ('#33D6C8' if 'diesel' in pn else ('#9B7FE8' if 'octane' in pn else '#8C96A8')) %}
+                    <span class="pk-chip" style="--cc:{{ tc }}"><i></i><b>{{ t.product.name }}</b>{% if t.capacity_liters %}<span class="cap">{{ '{:,.0f}'.format(t.capacity_liters) }} L</span>{% endif %}</span>
+                    {% endfor %}
+                </div>
+                {% else %}<div class="pk-none">No tanks yet.</div>{% endif %}
+            </div>
+
+            <div class="pk-sec">
+                <div class="pk-sec-h">
+                    <span class="t">Machines ({{ c.machines|length }})</span>
+                    <button type="button" class="pk-mini js-add-machine" data-pump="{{ p.id }}" data-name="{{ p.name }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Add Machine</button>
+                </div>
+                {% if c.machines %}
+                <div class="pk-chips">
+                    {% for m in c.machines %}
+                    {% set pn = (m.product.name if m.product else '')|lower %}
+                    {% set mc = '#F5A524' if 'petrol' in pn else ('#33D6C8' if 'diesel' in pn else ('#9B7FE8' if 'octane' in pn else '#8C96A8')) %}
+                    <span class="pk-chip" style="--cc:{{ mc }}"><i></i><b>{{ m.machine_name }}</b><span class="cap">{{ m.tank.tank_name if m.tank else (m.product.name if m.product else 'no fuel') }} · 2 nozzles</span></span>
+                    {% endfor %}
+                </div>
+                {% else %}<div class="pk-none">No machines yet.</div>{% endif %}
+            </div>
+
+            <div class="pk-foot">
+                <a class="pk-mini pk-edit" href="{{ url_for('master_data.petrol_pumps_edit', pump_id=p.id) }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit
+                </a>
+                <form method="post" action="{{ url_for('master_data.petrol_pumps_delete', pump_id=p.id) }}" class="d-inline"
+                      onsubmit="return confirm('Permanently delete pump \'{{ p.name|e }}\' and its machines, nozzles &amp; tanks? This cannot be undone. (If it has transactions, deactivate instead.)');">
+                    <button type="submit" class="pk-mini pk-del">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V6"/></svg>Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="pk-empty">No petrol pumps yet. Click <b>Add New Pump</b> to create one — then add its tanks and machines.</div>
+    {% endif %}
+</div>
+
+{# ---- Add Pump modal ---- #}
+<div class="pm-back" data-back="pmPump"></div>
+<div class="pm" id="pmPump" role="dialog" aria-modal="true">
+    <form method="post" action="{{ url_for('master_data.pumps_console_add_pump') }}">
+        <div class="pm-h">
+            <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#16110A" stroke-width="2"><path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16M4 21h11M15 9h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V9.5L19 7"/><path d="M7 7h5v4H7z"/></svg></span>
+            <div><h2>New Petrol Pump</h2><small>Master Data</small></div>
+            <button type="button" class="pm-x" data-close>×</button>
+        </div>
+        <div class="pm-body">
+            <div class="pm-fixed">Category fixed: <b>Petrol Pump Retail</b>{% if retail_unit %} ({{ retail_unit.name }}){% endif %}</div>
+            <div class="pm-f"><label>Pump name *</label><input type="text" name="name" placeholder="e.g. Punjab Filling Station" required autofocus></div>
+            <div class="pm-f"><label>Location</label><input type="text" name="location" placeholder="e.g. GT Road, Gujranwala"></div>
+            <button type="submit" class="pm-save">Add Pump</button>
+        </div>
+    </form>
+</div>
+
+{# ---- Add Tank modal ---- #}
+<div class="pm-back" data-back="pmTank"></div>
+<div class="pm" id="pmTank" role="dialog" aria-modal="true">
+    <form method="post" action="{{ url_for('master_data.pumps_console_add_tank') }}">
+        <input type="hidden" name="pump_id" id="tankPumpId">
+        <div class="pm-h">
+            <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#16110A" stroke-width="2"><rect x="3" y="7" width="14" height="10" rx="5"/><path d="M17 10h2l2 2v3"/></svg></span>
+            <div><h2>Add Tank</h2><small id="tankPumpName">Pump</small></div>
+            <button type="button" class="pm-x" data-close>×</button>
+        </div>
+        <div class="pm-body">
+            <div class="pm-f"><label>Fuel *</label>
+                <select name="product_id" required>
+                    <option value="">— Select fuel —</option>
+                    {% for f in fuels %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="pm-f"><label>Capacity (liters)</label><input type="number" step="0.01" min="0" name="capacity" placeholder="e.g. 20000"></div>
+            <button type="submit" class="pm-save">Add Tank</button>
+        </div>
+    </form>
+</div>
+
+{# ---- Add Machine modal ---- #}
+<div class="pm-back" data-back="pmMachine"></div>
+<div class="pm" id="pmMachine" role="dialog" aria-modal="true">
+    <form method="post" action="{{ url_for('master_data.pumps_console_add_machine') }}">
+        <input type="hidden" name="pump_id" id="machPumpId">
+        <div class="pm-h">
+            <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#16110A" stroke-width="2"><path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16M4 21h11M15 9h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V9.5L19 7"/><path d="M7 7h5v4H7z"/></svg></span>
+            <div><h2>Add Machine</h2><small id="machPumpName">Pump</small></div>
+            <button type="button" class="pm-x" data-close>×</button>
+        </div>
+        <div class="pm-body">
+            <div class="pm-fixed">A machine is wired to <b>one tank</b> and gets <b>2 nozzles</b> automatically (same fuel as the tank).</div>
+            <div class="pm-f"><label>Connected tank *</label>
+                <select name="tank_id" id="machTank" required>
+                    <option value="">— Select tank —</option>
+                </select>
+            </div>
+            <div class="pm-none" id="machNoTank" style="display:none">This pump has no tanks yet — add a tank first.</div>
+            <button type="submit" class="pm-save">Add Machine</button>
+        </div>
+    </form>
+</div>
+
+<script>
+var PUMP_TANKS = {
+{% for c in cards %}"{{ c.p.id }}": [{% for t in c.tanks %}{"id":{{ t.id }},"label":{{ (t.tank_name ~ ' · ' ~ (t.product.name if t.product else ''))|tojson }}}{% if not loop.last %},{% endif %}{% endfor %}]{% if not loop.last %},{% endif %}
+{% endfor %}};
+(function(){
+"use strict";
+function open(id){var m=document.getElementById(id),b=document.querySelector('[data-back="'+id+'"]');
+    if(m)m.classList.add("open");if(b)b.classList.add("open");}
+function closeAll(){document.querySelectorAll(".pm.open,.pm-back.open").forEach(function(e){e.classList.remove("open")});}
+document.getElementById("addPumpBtn").addEventListener("click",function(){open("pmPump")});
+document.querySelectorAll(".js-add-tank").forEach(function(b){b.addEventListener("click",function(){
+    document.getElementById("tankPumpId").value=b.dataset.pump;
+    document.getElementById("tankPumpName").textContent=b.dataset.name;open("pmTank");});});
+document.querySelectorAll(".js-add-machine").forEach(function(b){b.addEventListener("click",function(){
+    document.getElementById("machPumpId").value=b.dataset.pump;
+    document.getElementById("machPumpName").textContent=b.dataset.name;
+    // populate the connected-tank dropdown with THIS pump's tanks
+    var sel=document.getElementById("machTank"),none=document.getElementById("machNoTank"),
+        tanks=PUMP_TANKS[b.dataset.pump]||[];
+    sel.innerHTML='<option value="">— Select tank —</option>';
+    tanks.forEach(function(t){var o=document.createElement("option");o.value=t.id;o.textContent=t.label;sel.appendChild(o);});
+    none.style.display=tanks.length?"none":"block";
+    sel.style.display=tanks.length?"":"none";
+    open("pmMachine");});});
+document.querySelectorAll(".pm-back,[data-close]").forEach(function(e){e.addEventListener("click",closeAll)});
+document.addEventListener("keydown",function(e){if(e.key==="Escape")closeAll()});
+})();
+</script>
+{% endblock %}

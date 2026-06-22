@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Carriage &middot; Oil &amp; Gas ERP{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Carriage</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Carriage / Transport</h1>
+    <a href="{{ url_for('carriage.trips_create') }}" class="btn btn-primary">+ New Trip</a>
+</div>
+
+<p class="text-muted">Vehicle/tanker trips with their own freight income, expenses and profit/loss.</p>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-2"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Total Trips</div><div class="h4">{{ totals.count }}</div></div></div></div>
+    <div class="col-md-2"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Own</div><div class="h4">{{ totals.own }}</div></div></div></div>
+    <div class="col-md-2"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Rented</div><div class="h4">{{ totals.rented }}</div></div></div></div>
+    <div class="col-md-2"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Customer</div><div class="h4">{{ totals.customer }}</div></div></div></div>
+    <div class="col-md-2"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Freight Income</div><div class="h5">{{ "%.2f"|format(totals.freight) }}</div></div></div></div>
+    <div class="col-md-2"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Net Profit</div><div class="h5 {{ 'text-danger' if totals.profit < 0 else 'text-success' }}">{{ "%.2f"|format(totals.profit) }}</div></div></div></div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-3">
+        <div class="card border-warning"><div class="card-body">
+            <div class="text-muted small">Cash Fed from Pumps</div>
+            <div class="h4 mb-0">PKR {{ "{:,.0f}".format(totals.fed_from_pumps) }}</div>
+            <div class="text-muted small mt-1">Cash handed by petrol pumps to carriage (all-time)</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-light"><div class="card-body">
+            <div class="text-muted small">Carriage Cash &amp; Bank</div>
+            <div class="h4 mb-0">PKR {{ "{:,.0f}".format(totals.cash_balance) }}</div>
+            {% if carriage_accounts %}
+            <div class="text-muted small mt-1">
+                {% for a in carriage_accounts %}{{ a.name }}: {{ "{:,.0f}".format(a.current_balance or 0) }}{% if not loop.last %} · {% endif %}{% endfor %}
+            </div>
+            {% else %}
+            <div class="text-muted small mt-1">No carriage cash/bank account set up yet.</div>
+            {% endif %}
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-light"><div class="card-body">
+            <div class="text-muted small">Carriage Expenses</div>
+            <div class="h4 mb-0">PKR {{ "{:,.0f}".format(totals.expenses_total) }}</div>
+            <div class="text-muted small mt-1">Standalone business expenses (all-time)</div>
+        </div></div>
+    </div>
+</div>
+
+<a href="{{ url_for('carriage.trips_list') }}" class="btn btn-primary">Manage Trips</a>
+<a href="{{ url_for('carriage.expenses_list') }}" class="btn btn-outline-secondary">Expenses</a>
+<a href="{{ url_for('carriage.reports') }}" class="btn btn-outline-secondary">Vehicle / Driver P&amp;L Reports</a>
+{% endblock %}

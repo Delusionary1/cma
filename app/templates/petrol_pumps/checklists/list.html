@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Checklists · Petrol Pumps{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Daily Checklists</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Daily Checklists</h1>
+    <div>
+        <a href="{{ url_for('petrol_pumps.checklists_list', export='xlsx', **filters) }}" class="btn btn-success btn-sm">Export Excel</a>
+        <a href="{{ url_for('petrol_pumps.checklists_list', export='pdf', **filters) }}" class="btn btn-danger btn-sm">Export PDF</a>
+        <a href="{{ url_for('petrol_pumps.checklists_create') }}" class="btn btn-primary">+ New Checklist</a>
+    </div>
+</div>
+<p class="text-muted">Manager's daily pump inspection (BRD §15.1). Each issue is flagged for follow-up.</p>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-2"><input type="date" name="date" value="{{ filters.date }}" class="form-control"></div>
+    <div class="col-md-3">
+        <select name="petrol_pump_id" class="form-select">
+            <option value="">All pumps</option>
+            {% for pump in pumps %}
+            <option value="{{ pump.id }}" {{ "selected" if filters.petrol_pump_id == pump.id else "" }}>{{ pump.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Filter</button>
+        <a href="{{ url_for('petrol_pumps.checklists_list') }}" class="btn btn-link">Clear</a>
+    </div>
+</form>
+
+{% if checklists %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead><tr><th>Date</th><th>Pump</th><th class="text-center">Items</th><th class="text-center">Issues</th><th>Checked By</th><th class="text-end">Actions</th></tr></thead>
+        <tbody>
+            {% for ch in checklists %}
+            <tr>
+                <td>{{ ch.checklist_date.strftime("%Y-%m-%d") }}</td>
+                <td>{{ ch.petrol_pump.name }}</td>
+                <td class="text-center">{{ ch.items|length }}</td>
+                <td class="text-center">
+                    {% if ch.issue_count %}<span class="badge bg-danger">{{ ch.issue_count }}</span>
+                    {% else %}<span class="badge bg-success">0</span>{% endif %}
+                </td>
+                <td>{{ ch.checked_by.full_name if ch.checked_by else "—" }}</td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ url_for('petrol_pumps.checklists_view', checklist_id=ch.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                    <a href="{{ url_for('petrol_pumps.checklists_edit', checklist_id=ch.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="post" action="{{ url_for('petrol_pumps.checklists_delete', checklist_id=ch.id) }}" class="d-inline"
+                          onsubmit="return confirm('Delete this checklist?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No checklists found.</div>
+{% endif %}
+
+<a href="{{ url_for('petrol_pumps.index') }}" class="btn btn-link">&larr; Back to Petrol Pumps</a>
+{% endblock %}

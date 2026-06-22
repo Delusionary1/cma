@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}{{ category.name }} &middot; Product Categories{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.product_categories_list') }}">Product Categories</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ category.name }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{{ category.name }}</h1>
+    <div>
+        <a href="{{ url_for('master_data.product_categories_edit', category_id=category.id) }}"
+           class="btn btn-outline-secondary">Edit</a>
+        <form method="post"
+              action="{{ url_for('master_data.product_categories_toggle_status', category_id=category.id) }}"
+              class="d-inline">
+            {% if category.is_active %}
+            <button type="submit" class="btn btn-outline-warning">Deactivate</button>
+            {% else %}
+            <button type="submit" class="btn btn-outline-success">Activate</button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr>
+            <th style="width: 220px;">Status</th>
+            <td>
+                {% if category.is_active %}
+                <span class="badge bg-success">Active</span>
+                {% else %}
+                <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+            </td>
+        </tr>
+        <tr><th>Description</th><td>{{ category.description or "—" }}</td></tr>
+        <tr><th>Created</th><td>{{ category.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+        <tr><th>Updated</th><td>{{ category.updated_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+    </tbody>
+</table>
+
+<h2 class="h5 mt-4 mb-2">Products in this category</h2>
+{% if category.products %}
+<div class="table-responsive">
+    <table class="table table-sm table-striped align-middle">
+        <thead>
+            <tr><th>Name</th><th>Unit</th><th>Status</th><th class="text-end"></th></tr>
+        </thead>
+        <tbody>
+            {% for product in category.products %}
+            <tr>
+                <td>{{ product.name }}</td>
+                <td>{{ product.unit }}</td>
+                <td>
+                    {% if product.is_active %}
+                    <span class="badge bg-success">Active</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                </td>
+                <td class="text-end">
+                    <a href="{{ url_for('master_data.products_view', product_id=product.id) }}"
+                       class="btn btn-sm btn-outline-primary">View</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No products in this category yet.</div>
+{% endif %}
+
+<a href="{{ url_for('master_data.product_categories_list') }}" class="btn btn-link">
+    &larr; Back to Product Categories
+</a>
+{% endblock %}

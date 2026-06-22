@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Feed Cash to Carriage &middot; Petrol Pumps{% endblock %}
+
+{% block content %}
+{% from "petrol_pumps/_pump_lock.html" import pump_lock %}
+{% set sel_pump = (pumps|selectattr('id','equalto',form.petrol_pump_id)|first) if form.petrol_pump_id else None %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.carriage_feeds_list') }}">Cash Feed to Carriage</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Feed Cash</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">Feed Cash to Carriage</h1>
+
+<div class="alert alert-secondary">One entry records cash handed from this pump to the carriage business. It reduces the pump's current cash; choosing a carriage account also adds the cash there so carriage can spend it on trips.</div>
+
+<div class="row"><div class="col-12 col-lg-8">
+<form method="post">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="petrol_pump_id" class="form-label">Petrol Pump <span class="text-danger">*</span></label>
+            {% if sel_pump %}{{ pump_lock(sel_pump) }}{% else %}
+            <select class="form-select" id="petrol_pump_id" name="petrol_pump_id" required>
+                <option value="" disabled {{ "selected" if not form.petrol_pump_id else "" }}>-- Select a pump --</option>
+                {% for pump in pumps %}<option value="{{ pump.id }}" {{ "selected" if form.petrol_pump_id == pump.id else "" }}>{{ pump.name }}</option>{% endfor %}
+            </select>
+            {% endif %}
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="feed_date" class="form-label">Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="feed_date" name="feed_date" value="{{ form.feed_date }}" required>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="amount" class="form-label">Amount (PKR) <span class="text-danger">*</span></label>
+            <input type="number" step="0.01" min="0" class="form-control" id="amount" name="amount" value="{{ form.amount }}" required>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="into_account_id" class="form-label">Into carriage account</label>
+        <select class="form-select" id="into_account_id" name="into_account_id">
+            <option value="">-- None (just record the feed) --</option>
+            {% for a in accounts %}<option value="{{ a.id }}" {{ "selected" if form.into_account_id == a.id else "" }}>{{ a.name }} ({{ a.account_type }})</option>{% endfor %}
+        </select>
+        <div class="form-text">Pick the carriage cash/bank account that receives this cash. Leave as None to only record the feed.</div>
+    </div>
+
+    <div class="mb-3">
+        <label for="notes" class="form-label">Notes</label>
+        <textarea class="form-control" id="notes" name="notes" rows="2">{{ form.notes }}</textarea>
+    </div>
+
+    <input type="hidden" name="is_active" value="1">
+    <button type="submit" class="btn btn-primary">Feed Cash</button>
+    <a href="{{ url_for('petrol_pumps.carriage_feeds_list', petrol_pump_id=form.petrol_pump_id) }}" class="btn btn-link">Cancel</a>
+</form>
+</div></div>
+{% endblock %}

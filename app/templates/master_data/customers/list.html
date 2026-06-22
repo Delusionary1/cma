@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Customers &middot; Master Data{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Customers</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Customers</h1>
+    <a href="{{ url_for('master_data.customers_create') }}"
+       class="btn btn-primary">+ New Customer</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto flex-grow-1">
+        <input type="text" name="q" value="{{ q }}" class="form-control"
+               placeholder="Search by name, phone, business type or business unit...">
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Search</button>
+        {% if q %}
+        <a href="{{ url_for('master_data.customers_list') }}"
+           class="btn btn-link">Clear</a>
+        {% endif %}
+    </div>
+</form>
+
+{% if customers %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Business Unit</th>
+                <th>Business Type</th>
+                <th>Phone</th>
+                <th class="text-end">Opening Balance</th>
+                <th class="text-end">Credit Limit</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for customer in customers %}
+            <tr>
+                <td>{{ customer.name }}</td>
+                <td>{{ customer.business_unit.name }}</td>
+                <td>{{ customer.business_type or "—" }}</td>
+                <td>{{ customer.phone_number or "—" }}</td>
+                <td class="text-end">{{ "%.2f"|format(customer.opening_balance) }}</td>
+                <td class="text-end">
+                    {{ "%.2f"|format(customer.credit_limit) if customer.credit_limit is not none else "—" }}
+                </td>
+                <td>
+                    {% if customer.is_active %}
+                    <span class="badge bg-success">Active</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ url_for('master_data.customers_view', customer_id=customer.id) }}"
+                       class="btn btn-sm btn-outline-primary">View</a>
+                    <a href="{{ url_for('master_data.customers_edit', customer_id=customer.id) }}"
+                       class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="post"
+                          action="{{ url_for('master_data.customers_toggle_status', customer_id=customer.id) }}"
+                          class="d-inline">
+                        {% if customer.is_active %}
+                        <button type="submit" class="btn btn-sm btn-outline-warning">Deactivate</button>
+                        {% else %}
+                        <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
+                        {% endif %}
+                    </form>
+                    <form method="post"
+                          action="{{ url_for('master_data.customers_delete', customer_id=customer.id) }}"
+                          class="d-inline"
+                          onsubmit="return confirm('Permanently delete customer \'{{ customer.name|e }}\'? This cannot be undone. (If it has transactions, deactivate instead.)');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+    No customers found{% if q %} for "{{ q }}"{% endif %}.
+</div>
+{% endif %}
+
+<a href="{{ url_for('master_data.index') }}" class="btn btn-link">&larr; Back to Master Data</a>
+{% endblock %}

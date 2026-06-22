@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Cash Feed &middot; Petrol Pumps{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.carriage_feeds_list') }}">Cash Feed to Carriage</a></li>
+        <li class="breadcrumb-item active" aria-current="page">#{{ feed.id }}</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">Cash Feed to Carriage</h1>
+
+<table class="table w-auto">
+    <tr><th class="pe-4">Pump</th><td>{{ feed.petrol_pump.name }}</td></tr>
+    <tr><th>Date</th><td>{{ feed.feed_date.strftime("%Y-%m-%d") }}</td></tr>
+    <tr><th>Amount</th><td class="fw-semibold">PKR {{ "%.2f"|format(feed.amount) }}</td></tr>
+    <tr><th>Into account</th><td>{{ feed.into_account.name if feed.into_account else "—" }}</td></tr>
+    <tr><th>Notes</th><td>{{ feed.notes or "—" }}</td></tr>
+    <tr><th>Status</th><td>{% if feed.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td></tr>
+    <tr><th>Created by</th><td>{{ feed.created_by.full_name if feed.created_by else "—" }}</td></tr>
+</table>
+
+<a href="{{ url_for('petrol_pumps.carriage_feeds_list') }}" class="btn btn-link">&larr; Back</a>
+{% endblock %}

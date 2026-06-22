@@ -1,0 +1,20 @@
+{% extends "reports/dashboards/_base.html" %}
+{% import "reports/dashboards/_macros.html" as w %}
+
+{% block dash %}
+<div class="dgrid">
+    {{ w.kpi("Fuel Sale", d.summary.fuel_sale, "#F5A524") }}
+    {{ w.kpi("Lubricant Sale", d.summary.lubricant_sale, "#0E7490") }}
+    {{ w.kpi("Fuel COGS", d.summary.cogs, "#BE123C") }}
+    {{ w.kpi("Stock Gain/Loss", d.summary.stock_gain_loss, "#6D4FC2") }}
+    {{ w.kpi("Expenses", d.summary.expenses, "#A16207") }}
+    {{ w.kpi("Net Profit", d.summary.net, "#15803D") }}
+    {{ w.kpi("Fuel Liters Sold", "%.0f L"|format(d.summary.fuel_liters), "#475569", money=False) }}
+    {{ w.kpi("Tank Stock On Hand", "%.0f L"|format(d.tank_liters), "#1D4ED8", money=False) }}
+</div>
+
+<div class="dpanel">
+    <h2>Product-wise Fuel Sale</h2>
+    {{ w.bars(d.products, "name", "amount", "#F5A524") }}
+</div>
+{% endblock %}

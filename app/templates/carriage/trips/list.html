@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Carriage Trips{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('carriage.index') }}">Carriage</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Trips</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Carriage Trips</h1>
+    <a href="{{ url_for('carriage.trips_create') }}" class="btn btn-primary">+ New Trip</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-2"><input type="date" name="date" value="{{ filters.date }}" class="form-control"></div>
+    <div class="col-md-3">
+        <select name="trip_type" class="form-select">
+            <option value="">All trip types</option>
+            {% for t in trip_types %}<option value="{{ t }}" {{ "selected" if filters.trip_type == t else "" }}>{{ t }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="vehicle_ownership" class="form-select">
+            <option value="">All ownership</option>
+            {% for o in ownerships %}<option value="{{ o }}" {{ "selected" if filters.vehicle_ownership == o else "" }}>{{ o }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="trip_status" class="form-select">
+            <option value="">All statuses</option>
+            {% for s in trip_statuses %}<option value="{{ s }}" {{ "selected" if filters.trip_status == s else "" }}>{{ s }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="vehicle_id" class="form-select">
+            <option value="">All vehicles</option>
+            {% for v in vehicles %}<option value="{{ v.id }}" {{ "selected" if filters.vehicle_id == v.id else "" }}>{{ v.vehicle_number }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-outline-secondary">Filter</button>
+        <a href="{{ url_for('carriage.trips_list') }}" class="btn btn-link">Clear</a>
+    </div>
+</form>
+
+{% if trips %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead><tr><th>Trip #</th><th>Date</th><th>Type</th><th>Ownership</th><th>Vehicle</th><th class="text-end">Freight</th><th class="text-end">Expenses</th><th class="text-end">Profit</th><th>Status</th><th>Active</th><th class="text-end">Actions</th></tr></thead>
+        <tbody>
+            {% for t in trips %}
+            <tr>
+                <td>{{ t.trip_number }}</td>
+                <td>{{ t.trip_date.strftime("%Y-%m-%d") }}</td>
+                <td>{{ t.trip_type }}</td>
+                <td>{{ t.vehicle_ownership }}</td>
+                <td>{{ t.vehicle.vehicle_number if t.vehicle else (t.vehicle_number or "—") }}</td>
+                <td class="text-end">{{ "%.2f"|format(t.total_freight_amount) }}</td>
+                <td class="text-end">{{ "%.2f"|format(t.total_expenses) }}</td>
+                <td class="text-end fw-semibold {{ 'text-danger' if t.net_profit < 0 else 'text-success' }}">{{ "%.2f"|format(t.net_profit) }}</td>
+                <td>{{ t.trip_status }}</td>
+                <td>{% if t.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ url_for('carriage.trips_view', trip_id=t.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                    <a href="{{ url_for('carriage.trips_edit', trip_id=t.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="post" action="{{ url_for('carriage.trips_toggle_status', trip_id=t.id) }}" class="d-inline">
+                        {% if t.is_active %}<button class="btn btn-sm btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-sm btn-outline-success">Activate</button>{% endif %}
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No trips found.</div>
+{% endif %}
+
+<a href="{{ url_for('carriage.index') }}" class="btn btn-link">&larr; Back to Carriage</a>
+{% endblock %}

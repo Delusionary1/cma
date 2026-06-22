@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Salary Report · Pump Staff{% endblock %}
+
+{% block content %}
+{% from "petrol_pumps/_pump_lock.html" import pump_lock %}
+{% set sel_pump = pump %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.staff_list') }}">Staff</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Salary Report</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Salary Report{% if pump %} — {{ pump.name }}{% endif %}</h1>
+    <div>
+        <a href="{{ url_for('petrol_pumps.salary_report', export='xlsx', **{'from': d_from.isoformat(), 'to': d_to.isoformat()}) }}" class="btn btn-success btn-sm">Export Excel</a>
+        <a href="{{ url_for('petrol_pumps.salary_report', export='pdf', **{'from': d_from.isoformat(), 'to': d_to.isoformat()}) }}" class="btn btn-danger btn-sm">Export PDF</a>
+        <a href="{{ url_for('petrol_pumps.salary_payments_list') }}" class="btn btn-outline-secondary btn-sm">Payments</a>
+    </div>
+</div>
+<p class="text-muted">For each worker: monthly salary due, salary already paid, advance taken, and what's still left to pay (<strong>Remaining = Monthly Salary − Salary Paid − Advance</strong>).</p>
+
+<form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-md-2">
+        <label class="form-label small mb-1">From</label>
+        <input type="date" name="from" value="{{ d_from.isoformat() }}" class="form-control">
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small mb-1">To</label>
+        <input type="date" name="to" value="{{ d_to.isoformat() }}" class="form-control">
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Show</button>
+        <a href="{{ url_for('petrol_pumps.salary_report') }}" class="btn btn-link">Last 30 days</a>
+    </div>
+</form>
+
+{% if rows %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Employee</th><th>Designation</th>
+                <th class="text-end">Monthly Salary</th>
+                <th class="text-end">Salary Paid</th>
+                <th class="text-end">Advance Taken</th>
+                <th class="text-end">Total Paid</th>
+                <th class="text-end">Remaining to Pay</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in rows %}
+            <tr>
+                <td>{{ r.staff.employee_name }}</td>
+                <td><span class="badge bg-primary">{{ r.staff.designation }}</span></td>
+                <td class="text-end">{{ "%.2f"|format(r.due) }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.salary_paid) }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.advance) }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.paid_total) }}</td>
+                <td class="text-end fw-bold {{ 'text-danger' if r.remaining > 0 else ('text-success' if r.remaining < 0 else '') }}">{{ "%.2f"|format(r.remaining) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td colspan="2" class="text-end">Totals</td>
+                <td class="text-end">{{ "%.2f"|format(totals.due) }}</td>
+                <td class="text-end">{{ "%.2f"|format(totals.salary_paid) }}</td>
+                <td class="text-end">{{ "%.2f"|format(totals.advance) }}</td>
+                <td class="text-end">{{ "%.2f"|format(totals.paid_total) }}</td>
+                <td class="text-end">{{ "%.2f"|format(totals.remaining) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+<p class="text-muted small">A positive <strong>Remaining</strong> = still owed to the worker. Negative = the worker has been paid/advanced more than the monthly salary for this range.</p>
+{% else %}
+<div class="alert alert-info">No active staff for this pump.</div>
+{% endif %}
+
+<a href="{{ url_for('petrol_pumps.staff_list') }}" class="btn btn-link">&larr; Back to Staff</a>
+{% endblock %}

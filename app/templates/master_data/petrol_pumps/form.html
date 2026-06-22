@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {{ "Edit" if mode == "edit" else "New" }} Petrol Pump &middot; Master Data
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.petrol_pumps_list') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item active" aria-current="page">
+            {{ "Edit" if mode == "edit" else "New" }}
+        </li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">
+    {{ "Edit Petrol Pump" if mode == "edit" else "New Petrol Pump" }}
+</h1>
+
+{% if not retail_units %}
+<div class="alert alert-warning">
+    There are no active <strong>Petrol Pump Retail</strong> business units.
+    Please create or activate one before adding a petrol pump.
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-12 col-lg-8">
+        <form method="post">
+            <div class="mb-3">
+                <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="name" name="name"
+                       value="{{ form.name }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="business_unit_id" class="form-label">
+                    Business Unit (Petrol Pump Retail) <span class="text-danger">*</span>
+                </label>
+                <select class="form-select" id="business_unit_id"
+                        name="business_unit_id" required>
+                    <option value="" disabled
+                        {{ "selected" if not form.business_unit_id else "" }}>
+                        -- Select a business unit --
+                    </option>
+                    {% for unit in retail_units %}
+                    <option value="{{ unit.id }}"
+                        {{ "selected" if form.business_unit_id == unit.id else "" }}>
+                        {{ unit.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">
+                    Only active Petrol Pump Retail business units are listed.
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="location" class="form-label">Location</label>
+                <input type="text" class="form-control" id="location"
+                       name="location" value="{{ form.location }}">
+            </div>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="is_active"
+                       name="is_active" {{ "checked" if form.is_active else "" }}>
+                <label class="form-check-label" for="is_active">Active</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                {{ "Save Changes" if mode == "edit" else "Create" }}
+            </button>
+            {% if mode == "edit" %}
+            <a href="{{ url_for('master_data.petrol_pumps_view', pump_id=pump.id) }}"
+               class="btn btn-link">Cancel</a>
+            {% else %}
+            <a href="{{ url_for('master_data.petrol_pumps_list') }}"
+               class="btn btn-link">Cancel</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+{% if mode == "edit" %}
+{% set back = url_for('master_data.petrol_pumps_edit', pump_id=pump.id) %}
+<div class="row mt-2">
+    <div class="col-12 col-lg-10">
+        <hr class="my-4">
+        <h2 class="h5 mb-1">Tanks &amp; Machines</h2>
+        <p class="text-muted small mb-3">Fix or remove anything added wrong. Add new ones from the <a href="{{ url_for('master_data.pumps_console', pump=pump.id) }}">Pumps Console</a>.</p>
+
+        <h3 class="h6 text-muted">Tanks ({{ pump_tanks|length }})</h3>
+        {% if pump_tanks %}
+        <div class="table-responsive mb-4">
+            <table class="table table-sm table-striped align-middle">
+                <thead><tr><th>Tank</th><th>Fuel</th><th class="text-end">Capacity</th><th class="text-end">Current Stock</th><th class="text-end">Actions</th></tr></thead>
+                <tbody>
+                    {% for t in pump_tanks %}
+                    <tr{{ ' class=table-secondary' if not t.is_active else '' }}>
+                        <td class="fw-semibold">{{ t.tank_name }}{% if not t.is_active %} <span class="badge bg-secondary">inactive</span>{% endif %}</td>
+                        <td>{{ t.product.name if t.product else '—' }}</td>
+                        <td class="text-end">{{ "{:,.0f} L".format(t.capacity_liters) if t.capacity_liters is not none else '—' }}</td>
+                        <td class="text-end">{{ "{:,.0f} L".format(t.current_stock_liters or 0) }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('petrol_pumps.tanks_edit', tank_id=t.id) }}" class="btn btn-outline-secondary btn-sm">Edit</a>
+                            <form method="post" action="{{ url_for('petrol_pumps.tanks_delete', tank_id=t.id) }}" class="d-inline"
+                                  onsubmit="return confirm('Delete tank {{ t.tank_name }}? This cannot be undone.');">
+                                <input type="hidden" name="return_url" value="{{ back }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}<div class="alert alert-info">No tanks. Add them from the Pumps Console.</div>{% endif %}
+
+        <h3 class="h6 text-muted">Machines ({{ pump_machines|length }})</h3>
+        {% if pump_machines %}
+        <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle">
+                <thead><tr><th>Machine</th><th>Fuel</th><th class="text-center">Nozzles</th><th class="text-end">Actions</th></tr></thead>
+                <tbody>
+                    {% for m in pump_machines %}
+                    <tr{{ ' class=table-secondary' if not m.is_active else '' }}>
+                        <td class="fw-semibold">{{ m.machine_name }}{% if not m.is_active %} <span class="badge bg-secondary">inactive</span>{% endif %}</td>
+                        <td>{{ m.product.name if m.product else '—' }}</td>
+                        <td class="text-center">{{ m.nozzles|selectattr('is_active')|list|length }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('petrol_pumps.machines_edit', machine_id=m.id) }}" class="btn btn-outline-secondary btn-sm">Edit</a>
+                            <form method="post" action="{{ url_for('petrol_pumps.machines_delete', machine_id=m.id) }}" class="d-inline"
+                                  onsubmit="return confirm('Delete machine {{ m.machine_name }} and its nozzles? This cannot be undone.');">
+                                <input type="hidden" name="return_url" value="{{ back }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}<div class="alert alert-info">No machines. Add them from the Pumps Console.</div>{% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

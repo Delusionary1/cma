@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Cash Receive · Head Office{% endblock %}
+
+{% block content %}
+<style>
+.cr-wrap{position:relative;border-radius:22px;overflow:hidden;
+    background:linear-gradient(150deg,#0C1017,#121823 55%,#161E2B);
+    border:1px solid rgba(255,255,255,.08);padding:26px 28px 30px;color:#E8EBF0}
+.cr-wrap::before{content:"";position:absolute;right:-160px;top:-180px;width:480px;height:480px;border-radius:50%;
+    background:radial-gradient(circle,rgba(61,220,132,.14),transparent 65%);pointer-events:none}
+.cr-wrap::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+    background-size:46px 46px;mask-image:radial-gradient(ellipse 80% 90% at 20% 10%,#000 25%,transparent 75%)}
+.cr-wrap>*{position:relative;z-index:1}
+.cr-eyebrow{font-family:var(--fm);font-size:10.5px;letter-spacing:.26em;color:#7CEBAF;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.cr-eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:#3DDC84;box-shadow:0 0 10px #3DDC84}
+.cr-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.cr-head h1{font-family:var(--fl);color:#fff;font-size:26px;margin:0;letter-spacing:.01em}
+.cr-head h1 b{color:#7CEBAF}
+
+.cr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+.cr-pump{position:relative;border-radius:18px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.10);
+    padding:20px;display:flex;flex-direction:column;opacity:0;transform:translateY(16px);animation:crIn .6s var(--ease) forwards}
+@keyframes crIn{to{opacity:1;transform:none}}
+.cr-pump-top{display:flex;gap:13px;align-items:center;margin-bottom:14px}
+.cr-pic{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:grid;place-items:center;
+    background:linear-gradient(135deg,#2A3344,#1A212E);border:1px solid rgba(255,255,255,.12);color:#7CEBAF}
+.cr-pic svg{width:23px;height:23px}
+.cr-pump-top h3{font-family:var(--fd);font-size:16px;font-weight:700;color:#fff;margin:0}
+.cr-pump-top .loc{font-family:var(--fm);font-size:10px;color:#8C96A8;margin-top:2px}
+.cr-cash{border-radius:14px;padding:15px 16px;background:rgba(61,220,132,.08);border:1px solid rgba(61,220,132,.25);margin-bottom:14px}
+.cr-cash .lab{font-family:var(--fm);font-size:9px;letter-spacing:.16em;color:#7FBF9B;text-transform:uppercase}
+.cr-cash .val{font-family:var(--fd);font-weight:700;font-size:25px;color:#fff;margin-top:5px;line-height:1}
+.cr-cash .val small{font-size:11px;color:#7FBF9B;font-weight:600;margin-right:4px}
+.cr-cash.zero{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1)}
+.cr-cash.zero .val{color:#8C96A8}
+.cr-collect{font-family:var(--fm);font-size:11px;line-height:1.4;border-radius:10px;padding:9px 12px;margin-bottom:14px}
+.cr-collect b{font-family:var(--fd);font-size:13px}
+.cr-collect.ready{background:rgba(61,220,132,.10);border:1px solid rgba(61,220,132,.3);color:#7CEBAF}
+.cr-collect.pending{background:rgba(255,184,74,.08);border:1px solid rgba(255,184,74,.3);color:#FFD79A}
+.cr-btn{margin-top:auto;border:0;border-radius:11px;padding:11px;font-weight:700;font-size:13px;color:#04201F;cursor:pointer;
+    background:linear-gradient(92deg,#3DDC84,#2BC972 60%,#1FB562);box-shadow:0 6px 18px rgba(61,220,132,.35);display:flex;align-items:center;justify-content:center;gap:8px}
+.cr-btn svg{width:15px;height:15px}
+.cr-btn[disabled]{opacity:.45;pointer-events:none;background:#2A3344;color:#8C96A8;box-shadow:none}
+
+.cr-empty{padding:46px 20px;text-align:center;color:#9AA4B6;font-size:14px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.15);border-radius:16px}
+
+.rm-back{position:fixed;inset:0;z-index:1990;background:rgba(5,7,10,.74);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .3s}
+.rm-back.open{opacity:1;pointer-events:auto}
+.rm{position:fixed;z-index:2000;left:50%;top:50%;width:min(500px,calc(100vw - 28px));max-height:calc(100vh - 40px);overflow:auto;
+    transform:translate(-50%,-46%) scale(.96);opacity:0;pointer-events:none;
+    background:linear-gradient(160deg,#10151E,#151C28);border:1px solid rgba(255,255,255,.12);border-radius:22px;box-shadow:0 40px 90px rgba(0,0,0,.6);color:#E8EBF0;transition:transform .35s var(--ease),opacity .3s}
+.rm.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+.rm-h{display:flex;align-items:center;gap:13px;padding:22px 26px 0}
+.rm-h .ic{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:grid;place-items:center;background:linear-gradient(92deg,#3DDC84,#1FB562);box-shadow:0 0 22px rgba(61,220,132,.45)}
+.rm-h .ic svg{width:22px;height:22px}
+.rm-h h2{font-family:var(--fl);font-size:20px;color:#fff;margin:0}
+.rm-h small{display:block;font-family:var(--fm);font-size:9.5px;letter-spacing:.14em;color:#9AA4B6;text-transform:uppercase;margin-top:3px}
+.rm-x{margin-left:auto;background:none;border:none;color:#8C96A8;font-size:26px;line-height:1;cursor:pointer;padding:4px 8px}
+.rm-x:hover{color:#fff}
+.rm-body{padding:18px 26px 24px}
+.rm-avail{font-family:var(--fm);font-size:11px;color:#7CEBAF;background:rgba(61,220,132,.10);border:1px solid rgba(61,220,132,.3);border-radius:10px;padding:9px 12px;margin-bottom:15px;text-align:center}
+.rm-f{margin-bottom:14px}
+.rm-f label{display:block;font-family:var(--fm);font-size:9px;letter-spacing:.16em;color:#9AA4B6;text-transform:uppercase;margin-bottom:6px}
+.rm-f input,.rm-f select{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:11px;color:#F4F6F9;padding:11px 13px;font-size:14px;font-family:var(--fb);outline:none;color-scheme:dark}
+.rm-f input.big{font-family:var(--fm);font-size:17px;font-weight:600}
+.rm-f input:focus,.rm-f select:focus{border-color:rgba(61,220,132,.6);box-shadow:0 0 0 4px rgba(61,220,132,.12)}
+.rm-split{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:11px 14px;margin-bottom:14px}
+.rm-split .l{font-family:var(--fm);font-size:10px;letter-spacing:.1em;color:#9AA4B6;text-transform:uppercase}
+.rm-split .v{font-family:var(--fd);font-weight:700;font-size:17px;color:#FFC857}
+.rm-save{width:100%;border:0;border-radius:13px;padding:14px;cursor:pointer;font:700 15px/1 var(--fb);color:#04201F;background:linear-gradient(92deg,#3DDC84,#1FB562);box-shadow:0 10px 28px rgba(61,220,132,.4)}
+.rm-save:hover{transform:translateY(-2px)}
+@media(prefers-reduced-motion:reduce){.cr-pump{opacity:1!important;transform:none!important}}
+</style>
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('head_office.index') }}">Head Office</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Cash Receive from Pumps</li>
+    </ol>
+</nav>
+
+<div class="cr-wrap">
+    <div class="cr-head">
+        <div>
+            <div class="cr-eyebrow">Head Office · Treasury Intake</div>
+            <h1>Cash Receive <b>from Pumps</b></h1>
+        </div>
+        <a href="{{ url_for('head_office.cash_receipts_list') }}" class="btn btn-outline-secondary btn-sm">History</a>
+    </div>
+
+    {% if not ho_cash %}
+    <div class="alert alert-warning">No <strong>Head Office Cash</strong> account found — add one in Master Data so the cash-in-hand remainder has somewhere to land.</div>
+    {% endif %}
+
+    {% if pumps %}
+    <div class="cr-grid">
+        {% for row in pumps %}
+        {% set p = row.p %}
+        <div class="cr-pump">
+            <div class="cr-pump-top">
+                <span class="cr-pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16M4 21h11M15 9h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V9.5L19 7"/><path d="M7 7h5v4H7z"/></svg></span>
+                <div>
+                    <h3>{{ p.name }}</h3>
+                    <div class="loc">{{ p.location or '—' }}</div>
+                </div>
+            </div>
+            <div class="cr-cash {{ 'zero' if row.cash <= 0 }}">
+                <div class="lab">Cash at pump now</div>
+                <div class="val"><small>PKR</small>{{ '{:,.0f}'.format(row.cash) }}</div>
+            </div>
+            {% if row.to_collect > 0 %}
+            <div class="cr-collect ready">Ready to collect (daily closing done): <b>PKR {{ '{:,.0f}'.format(row.to_collect) }}</b></div>
+            {% else %}
+            <div class="cr-collect pending">Locked — enter this pump's daily closing to release the cash.</div>
+            {% endif %}
+            <button type="button" class="cr-btn js-receive"
+                    data-pump="{{ p.id }}" data-name="{{ p.name }}" data-cash="{{ row.to_collect }}"
+                    {{ 'disabled' if row.to_collect <= 0 }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#04201F" stroke-width="2.2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+                {{ 'Receive Cash' if row.to_collect > 0 else 'Closing pending' }}
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="cr-empty">No active petrol pumps.</div>
+    {% endif %}
+</div>
+
+{# ---- receive modal ---- #}
+<div class="rm-back" id="rmBack"></div>
+<div class="rm" id="rm" role="dialog" aria-modal="true">
+    <form method="post" action="{{ url_for('head_office.cash_receipts_console_save') }}" id="rmForm">
+        <input type="hidden" name="petrol_pump_id" id="rmPump">
+        <div class="rm-h">
+            <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#04201F" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></span>
+            <div><h2 id="rmTitle">Receive Cash</h2><small>Head Office</small></div>
+            <button type="button" class="rm-x" id="rmClose">×</button>
+        </div>
+        <div class="rm-body">
+            <div class="rm-avail">Confirmed &amp; ready to collect (from daily closing): <b>PKR <span id="rmAvail">0</span></b></div>
+            <div class="rm-f">
+                <label>Amount to receive (PKR)</label>
+                <input type="number" step="0.01" min="0" name="receive_amount" id="rmReceive" class="big" data-calc autocomplete="off">
+            </div>
+            <div class="rm-f">
+                <label>Send to bank account (optional)</label>
+                <select name="bank_account_id" id="rmBank">
+                    <option value="">— None (keep all as cash) —</option>
+                    {% for b in banks %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="rm-f">
+                <label>Amount to that bank</label>
+                <input type="number" step="0.01" min="0" name="bank_amount" id="rmBankAmt" value="0" data-calc autocomplete="off">
+            </div>
+            <div class="rm-f">
+                <label>Date</label>
+                <input type="date" name="receipt_date" value="{{ today.isoformat() }}" required>
+            </div>
+            <div class="rm-split">
+                <span class="l">Kept as Head Office cash</span>
+                <span class="v">PKR <span id="rmCash">0</span></span>
+            </div>
+            <button type="submit" class="rm-save">Receive</button>
+        </div>
+    </form>
+</div>
+
+<script>
+(function(){
+"use strict";
+var back=document.getElementById("rmBack"),modal=document.getElementById("rm"),
+    title=document.getElementById("rmTitle"),pumpIn=document.getElementById("rmPump"),
+    availEl=document.getElementById("rmAvail"),receive=document.getElementById("rmReceive"),
+    bank=document.getElementById("rmBank"),bankAmt=document.getElementById("rmBankAmt"),
+    cashEl=document.getElementById("rmCash");
+var nf=new Intl.NumberFormat("en",{maximumFractionDigits:0});
+function recalc(){
+    var r=parseFloat(receive.value)||0,b=parseFloat(bankAmt.value)||0;
+    if(b>r)b=r;cashEl.textContent=nf.format(Math.max(r-b,0));
+}
+function open(btn){
+    var cash=parseFloat(btn.dataset.cash)||0;
+    pumpIn.value=btn.dataset.pump;title.textContent="Receive from "+btn.dataset.name;
+    availEl.textContent=nf.format(cash);
+    receive.value=(Math.round(cash*100)/100);receive.max=cash;
+    bank.value="";bankAmt.value="0";recalc();
+    back.classList.add("open");modal.classList.add("open");
+    setTimeout(function(){receive.focus();receive.select();},250);
+}
+function close(){back.classList.remove("open");modal.classList.remove("open");}
+document.querySelectorAll(".js-receive").forEach(function(b){if(!b.disabled)b.addEventListener("click",function(){open(b)});});
+back.addEventListener("click",close);document.getElementById("rmClose").addEventListener("click",close);
+document.addEventListener("keydown",function(e){if(e.key==="Escape")close()});
+receive.addEventListener("input",recalc);bankAmt.addEventListener("input",recalc);
+})();
+</script>
+{% endblock %}

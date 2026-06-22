@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {{ "Edit" if mode == "edit" else "New" }} Vendor &middot; Master Data
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.vendors_list') }}">Vendors</a></li>
+        <li class="breadcrumb-item active" aria-current="page">
+            {{ "Edit" if mode == "edit" else "New" }}
+        </li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">{{ "Edit Vendor" if mode == "edit" else "New Vendor" }}</h1>
+
+{% if not business_units %}
+<div class="alert alert-warning">
+    There are no active business units. Please create or activate one before
+    adding a vendor.
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-12 col-lg-8">
+        <form method="post">
+            <div class="row">
+                <div class="col-md-7 mb-3">
+                    <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="name" name="name"
+                           value="{{ form.name }}" required>
+                </div>
+                <div class="col-md-5 mb-3">
+                    <label for="business_unit_id" class="form-label">
+                        Business Unit <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="business_unit_id"
+                            name="business_unit_id" required>
+                        <option value="" disabled
+                            {{ "selected" if not form.business_unit_id else "" }}>
+                            -- Select a business unit --
+                        </option>
+                        {% for unit in business_units %}
+                        <option value="{{ unit.id }}"
+                            {{ "selected" if form.business_unit_id == unit.id else "" }}>
+                            {{ unit.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="vendor_type" class="form-label">
+                        Vendor Type <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="vendor_type" name="vendor_type" required>
+                        <option value="" disabled
+                            {{ "selected" if not form.vendor_type else "" }}>
+                            -- Select a vendor type --
+                        </option>
+                        {% for vt in vendor_types %}
+                        <option value="{{ vt.name }}"
+                            {{ "selected" if form.vendor_type == vt.name else "" }}>
+                            {{ vt.value }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="phone_number" class="form-label">Phone Number</label>
+                    <input type="text" class="form-control" id="phone_number"
+                           name="phone_number" value="{{ form.phone_number }}">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="contact_person" class="form-label">Contact Person</label>
+                <input type="text" class="form-control" id="contact_person"
+                       name="contact_person" value="{{ form.contact_person }}">
+            </div>
+
+            <div class="mb-3">
+                <label for="address" class="form-label">Address</label>
+                <textarea class="form-control" id="address" name="address"
+                          rows="2">{{ form.address }}</textarea>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="opening_balance" class="form-label">Opening Balance</label>
+                    <input type="number" step="0.01" min="0" class="form-control"
+                           id="opening_balance" name="opening_balance"
+                           value="{{ form.opening_balance }}">
+                </div>
+            </div>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="is_active"
+                       name="is_active" {{ "checked" if form.is_active else "" }}>
+                <label class="form-check-label" for="is_active">Active</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                {{ "Save Changes" if mode == "edit" else "Create" }}
+            </button>
+            {% if mode == "edit" %}
+            <a href="{{ url_for('master_data.vendors_view', vendor_id=vendor.id) }}"
+               class="btn btn-link">Cancel</a>
+            {% else %}
+            <a href="{{ url_for('master_data.vendors_list') }}"
+               class="btn btn-link">Cancel</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}

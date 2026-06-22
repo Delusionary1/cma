@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Adjustments · Petrol Pumps{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Stock Adjustments</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Stock Gain / Loss Adjustments</h1>
+    <div>
+        <a href="{{ url_for('petrol_pumps.stock_adjustments_list', export='xlsx', **filters) }}" class="btn btn-success btn-sm">Export Excel</a>
+        <a href="{{ url_for('petrol_pumps.stock_adjustments_list', export='pdf', **filters) }}" class="btn btn-danger btn-sm">Export PDF</a>
+        <a href="{{ url_for('petrol_pumps.tank_stock') }}" class="btn btn-outline-secondary btn-sm">Tank Stock</a>
+        <a href="{{ url_for('petrol_pumps.stock_adjustments_create') }}" class="btn btn-primary">+ New Adjustment</a>
+    </div>
+</div>
+<p class="text-muted">Physical dip count vs system stock. An adjustment changes tank stock <strong>only after approval</strong>.</p>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-2"><input type="date" name="date" value="{{ filters.date }}" class="form-control"></div>
+    <div class="col-md-3">
+        <select name="petrol_pump_id" class="form-select">
+            <option value="">All pumps</option>
+            {% for pump in pumps %}
+            <option value="{{ pump.id }}" {{ "selected" if filters.petrol_pump_id == pump.id else "" }}>{{ pump.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="status" class="form-select">
+            <option value="">All statuses</option>
+            {% for s in statuses %}
+            <option value="{{ s }}" {{ "selected" if filters.status == s else "" }}>{{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Filter</button>
+        <a href="{{ url_for('petrol_pumps.stock_adjustments_list') }}" class="btn btn-link">Clear</a>
+    </div>
+</form>
+
+{% if adjustments %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Date</th><th>Pump</th><th>Tank</th><th>Product</th>
+                <th class="text-end">System (L)</th>
+                <th class="text-end">Physical (L)</th>
+                <th class="text-end">Difference</th>
+                <th>Result</th><th>Status</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in adjustments %}
+            <tr>
+                <td>{{ a.adjustment_date.strftime("%Y-%m-%d") }}</td>
+                <td>{{ a.petrol_pump.name }}</td>
+                <td>{{ a.tank.tank_name }}</td>
+                <td>{{ a.product.name }}</td>
+                <td class="text-end">{{ "%.2f"|format(a.system_stock_liters) }}</td>
+                <td class="text-end">{{ "%.2f"|format(a.physical_stock_liters) }}</td>
+                <td class="text-end fw-semibold {{ 'text-danger' if a.difference_liters < 0 else ('text-success' if a.difference_liters > 0 else '') }}">
+                    {{ "%+.2f"|format(a.difference_liters) }}
+                </td>
+                <td>
+                    {% if a.difference_liters > 0 %}<span class="badge bg-success">Gain</span>
+                    {% elif a.difference_liters < 0 %}<span class="badge bg-danger">Loss</span>
+                    {% else %}<span class="badge bg-secondary">None</span>{% endif %}
+                </td>
+                <td>
+                    {% if a.status == 'Approved' %}<span class="badge bg-success">Approved</span>
+                    {% elif a.status == 'Rejected' %}<span class="badge bg-danger">Rejected</span>
+                    {% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ url_for('petrol_pumps.stock_adjustments_view', adjustment_id=a.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                    {% if a.status == 'Pending' %}
+                    <a href="{{ url_for('petrol_pumps.stock_adjustments_edit', adjustment_id=a.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    {% if can_approve %}
+                    <form method="post" action="{{ url_for('petrol_pumps.stock_adjustments_approve', adjustment_id=a.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
+                    </form>
+                    {% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No stock adjustments found.</div>
+{% endif %}
+
+<a href="{{ url_for('petrol_pumps.index') }}" class="btn btn-link">&larr; Back to Petrol Pumps</a>
+{% endblock %}

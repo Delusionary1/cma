@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Closing #{{ closing.id }} &middot; Petrol Pumps{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.daily_closings_list') }}">Daily Closings</a></li>
+        <li class="breadcrumb-item active" aria-current="page">#{{ closing.id }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Daily Closing #{{ closing.id }}</h1>
+    <div>
+        <a href="{{ url_for('petrol_pumps.daily_closings_edit', closing_id=closing.id) }}" class="btn btn-outline-secondary">Edit</a>
+        <form method="post" action="{{ url_for('petrol_pumps.daily_closings_toggle_status', closing_id=closing.id) }}" class="d-inline">
+            {% if closing.is_active %}<button class="btn btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-outline-success">Activate</button>{% endif %}
+        </form>
+    </div>
+</div>
+
+{% if payment_mismatch %}
+<div class="alert alert-warning">Payment method totals ({{ "%.2f"|format(payment_methods_total) }}) do not equal the total sale amount ({{ "%.2f"|format(closing.total_sale_amount) }}).</div>
+{% endif %}
+
+<div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Total Sale</div><div class="h4">{{ "%.2f"|format(closing.total_sale_amount) }}</div></div></div></div>
+    <div class="col-md-3"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Expenses Paid</div><div class="h4">{{ "%.2f"|format(closing.expenses_paid) }}</div></div></div></div>
+    <div class="col-md-3"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Non-cash Total</div><div class="h4">{{ "%.2f"|format(payment_methods_total - closing.cash_received) }}</div></div></div></div>
+    <div class="col-md-3"><div class="card text-bg-success"><div class="card-body"><div class="small">Cash to Head Office</div><div class="h4">{{ "%.2f"|format(closing.cash_submitted_to_head_office) }}</div></div></div></div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr><th style="width:260px;">Status</th><td>{% if closing.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td></tr>
+        <tr><th>Date</th><td>{{ closing.closing_date.strftime("%Y-%m-%d") }}</td></tr>
+        <tr><th>Petrol Pump</th><td>{{ closing.petrol_pump.name }}</td></tr>
+        <tr><th>Fuel Sale Liters</th><td>{{ "%.2f"|format(closing.fuel_sale_liters) }}</td></tr>
+        <tr><th>Fuel Sale Amount</th><td>{{ "%.2f"|format(closing.fuel_sale_amount) }}</td></tr>
+        <tr><th>Lubricant Sale Amount</th><td>{{ "%.2f"|format(closing.lubricant_sale_amount) }}</td></tr>
+        <tr class="table-light"><th>Total Sale Amount</th><td class="fw-bold">{{ "%.2f"|format(closing.total_sale_amount) }}</td></tr>
+        <tr><th>Cash Received (cash portion of sale)</th><td>{{ "%.2f"|format(closing.cash_received) }}</td></tr>
+        {% for amount_attr, account_attr, field, label, types in deposit_methods %}
+        {% set rel = closing[account_attr.replace('_id','')] %}
+        <tr>
+            <th>{{ label }}</th>
+            <td>
+                {{ "%.2f"|format(closing[amount_attr]) }}
+                {% if closing[amount_attr] and closing[amount_attr] > 0 %}
+                    {% if rel %}<span class="text-muted">→ {{ rel.name }}</span>{% else %}<span class="text-danger">→ no account</span>{% endif %}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        <tr><th>PSO Card</th><td>{{ "%.2f"|format(closing.pso_card_amount) }} <span class="text-muted">→ PSO vendor card section</span></td></tr>
+        <tr><th>Credit Sale</th><td>{{ "%.2f"|format(closing.credit_sale_amount) }}
+            {% if closing.credit_sale_amount and closing.credit_sale_amount > 0 %}
+                {% if closing.credit_customer %}<span class="text-muted">→ {{ closing.credit_customer.name }} (receivable)</span>{% else %}<span class="text-danger">→ no customer</span>{% endif %}
+            {% endif %}</td></tr>
+        <tr><th>Expenses Paid</th><td>{{ "%.2f"|format(closing.expenses_paid) }}</td></tr>
+        <tr class="table-success"><th>Cash to Head Office</th><td class="fw-bold">{{ "%.2f"|format(closing.cash_submitted_to_head_office) }}</td></tr>
+        <tr><th>Manager Approved</th><td>{{ "Yes" if closing.manager_approved else "No" }}</td></tr>
+        <tr><th>Remarks</th><td>{{ closing.remarks or "—" }}</td></tr>
+        <tr><th>Created By</th><td>{{ closing.created_by.full_name if closing.created_by else "—" }}</td></tr>
+    </tbody>
+</table>
+
+<a href="{{ url_for('petrol_pumps.daily_closings_list') }}" class="btn btn-link">&larr; Back to Daily Closings</a>
+{% endblock %}

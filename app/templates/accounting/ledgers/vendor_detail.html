@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}{{ vendor.name }} Ledger &middot; Accounting{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('accounting.index') }}">Accounting</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('accounting.vendor_ledgers_list') }}">Vendor Ledgers</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ vendor.name }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{{ vendor.name }}</h1>
+    <a href="{{ url_for('head_office.vendor_payments_create') }}" class="btn btn-primary btn-sm">+ Pay Vendor</a>
+</div>
+
+<p class="text-muted">Payable balance: <strong class="{{ 'text-danger' if closing < 0 else '' }}">{{ "%.2f"|format(closing) }}</strong> (positive = we owe the vendor)</p>
+
+<h2 class="h5 mb-2">Business-wise Statement</h2>
+<p class="text-muted small mb-2">Purchases broken down by business unit; payments are not tagged to a business and net against the overall balance (BRD §5.6).</p>
+<div class="table-responsive mb-4">
+    <table class="table table-sm table-striped align-middle">
+        <thead><tr><th>Business</th><th class="text-center">Deals</th><th class="text-end">Purchases</th></tr></thead>
+        <tbody>
+            {% for s in statement.segments %}
+            <tr>
+                <td class="fw-semibold">{{ s.business }}</td>
+                <td class="text-center">{{ s.deals }}</td>
+                <td class="text-end">{{ "%.2f"|format(s.purchases) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            {% if statement.opening %}<tr><td colspan="2" class="text-end text-muted">Opening balance</td><td class="text-end">{{ "%.2f"|format(statement.opening) }}</td></tr>{% endif %}
+            <tr class="fw-semibold"><td colspan="2" class="text-end">Total purchases (incl. opening)</td><td class="text-end">{{ "%.2f"|format(statement.opening + statement.purchases) }}</td></tr>
+            <tr><td colspan="2" class="text-end text-muted">Less: payments</td><td class="text-end">({{ "%.2f"|format(statement.payments) }})</td></tr>
+            <tr class="table-light fw-bold"><td colspan="2" class="text-end">Closing payable</td><td class="text-end {{ 'text-danger' if statement.closing < 0 else '' }}">{{ "%.2f"|format(statement.closing) }}</td></tr>
+        </tfoot>
+    </table>
+</div>
+
+<h2 class="h5 mb-2">Ledger (chronological)</h2>
+{% if entries %}
+<div class="table-responsive">
+    <table class="table table-sm table-striped align-middle">
+        <thead><tr><th>Date</th><th>Description</th><th class="text-end">Debit (payment)</th><th class="text-end">Credit (purchase)</th><th class="text-end">Balance</th></tr></thead>
+        <tbody>
+            {% for e in entries %}
+            <tr>
+                <td>{{ e.date.strftime("%Y-%m-%d") if e.date else "—" }}</td>
+                <td>{{ e.description }}</td>
+                <td class="text-end">{{ "%.2f"|format(e.debit) if e.debit else "" }}</td>
+                <td class="text-end">{{ "%.2f"|format(e.credit) if e.credit else "" }}</td>
+                <td class="text-end fw-semibold">{{ "%.2f"|format(e.balance) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot><tr class="table-light fw-bold"><td colspan="4" class="text-end">Closing balance</td><td class="text-end">{{ "%.2f"|format(closing) }}</td></tr></tfoot>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No ledger activity for this vendor.</div>
+{% endif %}
+
+<a href="{{ url_for('accounting.vendor_ledgers_list') }}" class="btn btn-link">&larr; Back to Vendor Ledgers</a>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Cash Received from Pumps &middot; Head Office{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('head_office.index') }}">Head Office</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Cash Receipts</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Cash Received from Pumps</h1>
+    <a href="{{ url_for('head_office.cash_receipts_create') }}" class="btn btn-primary">+ New Receipt</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-3"><input type="date" name="date" value="{{ filters.date }}" class="form-control"></div>
+    <div class="col-md-3">
+        <select name="petrol_pump_id" class="form-select">
+            <option value="">All pumps</option>
+            {% for pump in pumps %}<option value="{{ pump.id }}" {{ "selected" if filters.petrol_pump_id == pump.id else "" }}>{{ pump.name }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select name="received_into_account_id" class="form-select">
+            <option value="">All accounts</option>
+            {% for a in accounts %}<option value="{{ a.id }}" {{ "selected" if filters.received_into_account_id == a.id else "" }}>{{ a.name }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Filter</button>
+        <a href="{{ url_for('head_office.cash_receipts_list') }}" class="btn btn-link">Clear</a>
+    </div>
+</form>
+
+{% if receipts %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead><tr><th>Date</th><th>Pump</th><th class="text-end">Amount</th><th>Method</th><th>Into Account</th><th>Closing</th><th>Posted</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+        <tbody>
+            {% for r in receipts %}
+            <tr>
+                <td>{{ r.receipt_date.strftime("%Y-%m-%d") }}</td>
+                <td>{{ r.petrol_pump.name }}</td>
+                <td class="text-end fw-semibold">{{ "%.2f"|format(r.amount) }}</td>
+                <td>{{ r.payment_method }}</td>
+                <td>{{ r.received_into_account.name if r.received_into_account else "—" }}</td>
+                <td>{% if r.daily_closing %}#{{ r.daily_closing_id }} ({{ r.daily_closing.closing_date.strftime("%Y-%m-%d") }}){% else %}—{% endif %}</td>
+                <td>{% if r.is_posted %}<span class="badge bg-info text-dark">Posted</span>{% else %}<span class="badge bg-light text-dark">—</span>{% endif %}</td>
+                <td>{% if r.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ url_for('head_office.cash_receipts_view', receipt_id=r.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                    <a href="{{ url_for('head_office.cash_receipts_edit', receipt_id=r.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="post" action="{{ url_for('head_office.cash_receipts_toggle_status', receipt_id=r.id) }}" class="d-inline">
+                        {% if r.is_active %}<button class="btn btn-sm btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-sm btn-outline-success">Activate</button>{% endif %}
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No cash receipts found.</div>
+{% endif %}
+
+<a href="{{ url_for('head_office.index') }}" class="btn btn-link">&larr; Back to Head Office</a>
+{% endblock %}

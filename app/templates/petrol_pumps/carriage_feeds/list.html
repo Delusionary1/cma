@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Cash Feed to Carriage &middot; Petrol Pumps{% endblock %}
+
+{% block content %}
+{% from "petrol_pumps/_pump_lock.html" import pump_lock %}
+{% set sel_pump = (pumps|selectattr('id','equalto',filters.petrol_pump_id)|first) if filters.petrol_pump_id else None %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Cash Feed to Carriage</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Cash Feed to Carriage{% if pump %} — {{ pump.name }}{% endif %}</h1>
+    <a href="{{ url_for('petrol_pumps.carriage_feeds_create', petrol_pump_id=filters.petrol_pump_id) }}" class="btn btn-primary">+ Feed Cash</a>
+</div>
+<p class="text-muted">Cash handed from the pump to the carriage business. Each entry reduces the pump's current cash; if a carriage account is chosen, that account is topped up.</p>
+
+
+{% if feeds %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead><tr><th>Date</th><th>Pump</th><th class="text-end">Amount</th><th>Into account</th><th>Notes</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+        <tbody>
+            {% for f in feeds %}
+            <tr>
+                <td>{{ f.feed_date.strftime("%Y-%m-%d") }}</td>
+                <td>{{ f.petrol_pump.name }}</td>
+                <td class="text-end fw-semibold">{{ "%.2f"|format(f.amount) }}</td>
+                <td>{{ f.into_account.name if f.into_account else "—" }}</td>
+                <td>{{ f.notes or "—" }}</td>
+                <td>{% if f.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ url_for('petrol_pumps.carriage_feeds_view', feed_id=f.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                    <form method="post" action="{{ url_for('petrol_pumps.carriage_feeds_toggle_status', feed_id=f.id) }}" class="d-inline">
+                        {% if f.is_active %}<button class="btn btn-sm btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-sm btn-outline-success">Activate</button>{% endif %}
+                    </form>
+                    <form method="post" action="{{ url_for('petrol_pumps.carriage_feeds_delete', feed_id=f.id) }}" class="d-inline"
+                          onsubmit="return confirm('Permanently delete this cash feed of PKR {{ '%.0f'|format(f.amount) }}? This cannot be undone.');">
+                        <button class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td colspan="2" class="text-end">Total fed (active)</td>
+                <td class="text-end">{{ "%.2f"|format(total) }}</td>
+                <td colspan="4"></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No cash feeds yet.</div>
+{% endif %}
+
+<a href="{{ url_for('petrol_pumps.index') }}" class="btn btn-link">&larr; Back to Petrol Pumps</a>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Approvals · CMA &amp; Co.{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Approvals</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-1">Approvals Queue</h1>
+<p class="text-muted">Review and sign off on sensitive entries (BRD §16): large expenses &amp; payments, bulk and agency sales.</p>
+
+<div class="d-flex gap-2 flex-wrap mb-3">
+    {% for s in statuses %}
+    <a href="{{ url_for('approvals.index', status=s, type=filters.type) }}"
+       class="btn btn-sm {{ 'btn-primary' if filters.status == s else 'btn-outline-secondary' }}">
+        {{ s }} <span class="badge bg-light text-dark ms-1">{{ counts[s] }}</span>
+    </a>
+    {% endfor %}
+    <form method="get" class="ms-auto d-flex gap-2">
+        <input type="hidden" name="status" value="{{ filters.status }}">
+        <select name="type" class="form-select form-select-sm" onchange="this.form.submit()" style="width:auto">
+            <option value="">All types</option>
+            {% for key, meta in types.items() %}
+            <option value="{{ key }}" {{ 'selected' if filters.type == key else '' }}>{{ meta[0] }}</option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+
+{% if rows %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr><th>Requested</th><th>Type</th><th>Item</th><th class="text-end">Amount</th><th>Status</th><th>By / Decision</th><th class="text-end">Actions</th></tr>
+        </thead>
+        <tbody>
+            {% for r in rows %}
+            {% set a = r.a %}
+            <tr>
+                <td>{{ a.created_at.strftime("%Y-%m-%d") }}</td>
+                <td><span class="badge bg-secondary">{{ r.label }}</span></td>
+                <td>{% if r.url %}<a href="{{ r.url }}">{{ a.title or (r.label ~ ' #' ~ a.entity_id) }}</a>{% else %}{{ a.title or a.entity_id }}{% endif %}</td>
+                <td class="text-end">{{ "%.2f"|format(a.amount) if a.amount is not none else "—" }}</td>
+                <td>
+                    {% if a.status == 'Approved' %}<span class="badge bg-success">Approved</span>
+                    {% elif a.status == 'Rejected' %}<span class="badge bg-danger">Rejected</span>
+                    {% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}
+                </td>
+                <td class="small text-muted">
+                    {{ a.requested_by.full_name if a.requested_by else "—" }}
+                    {% if a.status != 'Pending' and a.approved_by %}<br>→ {{ a.approved_by.full_name }}{% if a.rejection_reason %} <em>({{ a.rejection_reason }})</em>{% endif %}{% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                    {% if a.status == 'Pending' %}
+                    <form method="post" action="{{ url_for('approvals.approve', approval_id=a.id) }}" class="d-inline">
+                        <input type="hidden" name="return_url" value="{{ request.full_path }}">
+                        <button class="btn btn-sm btn-outline-success">Approve</button>
+                    </form>
+                    <form method="post" action="{{ url_for('approvals.reject', approval_id=a.id) }}" class="d-inline d-flex gap-1">
+                        <input type="hidden" name="return_url" value="{{ request.full_path }}">
+                        <input type="text" name="rejection_reason" class="form-control form-control-sm" placeholder="Reason" style="max-width:140px">
+                        <button class="btn btn-sm btn-outline-danger">Reject</button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="{{ url_for('approvals.reopen', approval_id=a.id) }}" class="d-inline">
+                        <input type="hidden" name="return_url" value="{{ request.full_path }}">
+                        <button class="btn btn-sm btn-outline-secondary">Reopen</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No {{ filters.status|lower }} approvals{% if filters.type %} of this type{% endif %}.</div>
+{% endif %}
+{% endblock %}

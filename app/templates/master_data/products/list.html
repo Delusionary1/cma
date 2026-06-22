@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Products &middot; Master Data{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Products</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Products</h1>
+    <a href="{{ url_for('master_data.products_create') }}"
+       class="btn btn-primary">+ New Product</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto flex-grow-1">
+        <input type="text" name="q" value="{{ q }}" class="form-control"
+               placeholder="Search by name, category or unit...">
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Search</button>
+        {% if q %}
+        <a href="{{ url_for('master_data.products_list') }}"
+           class="btn btn-link">Clear</a>
+        {% endif %}
+    </div>
+</form>
+
+{% if products %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Unit</th>
+                <th class="text-end">Purchase Rate</th>
+                <th class="text-end">Sale Rate</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td>{{ product.name }}</td>
+                <td>{{ product.category.name }}</td>
+                <td>{{ product.unit }}</td>
+                <td class="text-end">
+                    {{ "%.2f"|format(product.default_purchase_rate) if product.default_purchase_rate is not none else "—" }}
+                </td>
+                <td class="text-end">
+                    {{ "%.2f"|format(product.default_sale_rate) if product.default_sale_rate is not none else "—" }}
+                </td>
+                <td>
+                    {% if product.is_active %}
+                    <span class="badge bg-success">Active</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ url_for('master_data.products_view', product_id=product.id) }}"
+                       class="btn btn-sm btn-outline-primary">View</a>
+                    <a href="{{ url_for('master_data.products_edit', product_id=product.id) }}"
+                       class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="post"
+                          action="{{ url_for('master_data.products_toggle_status', product_id=product.id) }}"
+                          class="d-inline">
+                        {% if product.is_active %}
+                        <button type="submit" class="btn btn-sm btn-outline-warning">Deactivate</button>
+                        {% else %}
+                        <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
+                        {% endif %}
+                    </form>
+                    <form method="post"
+                          action="{{ url_for('master_data.products_delete', product_id=product.id) }}"
+                          class="d-inline"
+                          onsubmit="return confirm('Permanently delete product \'{{ product.name|e }}\'? This cannot be undone. (If it is in use, deactivate instead.)');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+    No products found{% if q %} for "{{ q }}"{% endif %}.
+</div>
+{% endif %}
+
+<a href="{{ url_for('master_data.index') }}" class="btn btn-link">&larr; Back to Master Data</a>
+{% endblock %}

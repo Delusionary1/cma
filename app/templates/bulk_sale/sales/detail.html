@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk Sale #{{ sale.id }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('bulk_sale.index') }}">Bulk Sale</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('bulk_sale.sales_list') }}">Bulk Sales</a></li>
+        <li class="breadcrumb-item active" aria-current="page">#{{ sale.id }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Bulk Sale #{{ sale.id }}</h1>
+    <div>
+        <a href="{{ url_for('bulk_sale.sales_edit', sale_id=sale.id) }}" class="btn btn-outline-secondary">Edit</a>
+        <form method="post" action="{{ url_for('bulk_sale.sales_toggle_status', sale_id=sale.id) }}" class="d-inline">
+            {% if sale.is_active %}<button class="btn btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-outline-success">Activate</button>{% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Total Sale</div><div class="h4">{{ "%.2f"|format(sale.total_sale_amount) }}</div></div></div></div>
+    <div class="col-md-3"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Total Purchase</div><div class="h4">{{ "%.2f"|format(sale.total_purchase_amount) }}</div></div></div></div>
+    <div class="col-md-3"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Carriage + Other</div><div class="h4">{{ "%.2f"|format(sale.carriage_charges + sale.other_expense) }}</div></div></div></div>
+    <div class="col-md-3"><div class="card text-bg-light"><div class="card-body"><div class="text-muted small">Net Profit</div><div class="h4 {{ 'text-danger' if sale.net_profit < 0 else 'text-success' }}">{{ "%.2f"|format(sale.net_profit) }}</div></div></div></div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr><th style="width:220px;">Status</th><td>{% if sale.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td></tr>
+        <tr><th>Date</th><td>{{ sale.sale_date.strftime("%Y-%m-%d") }}</td></tr>
+        <tr><th>Pump Name</th><td>{{ sale.petrol_pump.name }}</td></tr>
+        <tr><th>Customer</th><td>{{ sale.customer.name }}</td></tr>
+        <tr><th>Vendor</th><td>{{ sale.vendor.name }} ({{ sale.vendor.vendor_type.value }})</td></tr>
+        <tr><th>Product</th><td>{{ sale.product.name }}</td></tr>
+        <tr><th>Quantity (liters)</th><td>{{ "%.2f"|format(sale.quantity_liters) }}</td></tr>
+        <tr><th>Purchase Rate</th><td>{{ "%.2f"|format(sale.purchase_rate) }}</td></tr>
+        <tr><th>Sale Rate</th><td>{{ "%.2f"|format(sale.sale_rate) }}</td></tr>
+        <tr><th>PSO Invoice Number</th><td>{{ sale.pso_invoice_number or "—" }}</td></tr>
+        <tr><th>Carriage Charges</th><td>{{ "%.2f"|format(sale.carriage_charges) }} ({{ sale.carriage_paid_by or "—" }})</td></tr>
+        <tr><th>Other Expense</th><td>{{ "%.2f"|format(sale.other_expense) }}</td></tr>
+        <tr><th>Delivery Method</th><td>{{ sale.delivery_method or "—" }}</td></tr>
+        <tr><th>Vehicle / Tanker</th><td>{{ sale.vehicle_number or "—" }}</td></tr>
+        <tr><th>Driver</th><td>{{ sale.driver_name or "—" }}</td></tr>
+        <tr><th>Delivery Location</th><td>{{ sale.delivery_location or "—" }}</td></tr>
+        <tr><th>Payment</th><td>{{ sale.payment_method or "—" }} &mdash; {{ sale.payment_status }}</td></tr>
+        <tr><th>Delivery Status</th><td>{{ sale.delivery_status }}</td></tr>
+        <tr><th>Notes</th><td>{{ sale.notes or "—" }}</td></tr>
+        <tr><th>Created By</th><td>{{ sale.created_by.full_name if sale.created_by else "—" }}</td></tr>
+    </tbody>
+</table>
+
+{% import "_approval.html" as appr with context %}
+{{ appr.banner('bulk_sale', sale.id) }}
+
+{% import "_attachments.html" as att with context %}
+{{ att.panel('bulk_sale', sale.id, 'Invoices &amp; Documents') }}
+
+<a href="{{ url_for('bulk_sale.sales_list') }}" class="btn btn-link">&larr; Back to Bulk Sales</a>
+{% endblock %}

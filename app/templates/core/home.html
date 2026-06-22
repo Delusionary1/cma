@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+
+{% block title %}Home · CMA &amp; Co. Command{% endblock %}
+
+{% block content %}
+<style>
+/* home-page flourishes (scoped) */
+.hero-band{
+    position:relative;border-radius:20px;overflow:hidden;
+    background:linear-gradient(135deg,#0E1219,#151B26 55%,#1A2230);
+    border:1px solid rgba(255,255,255,.08);
+    padding:38px 40px;margin-bottom:28px;color:#F4F6F9;
+}
+.hero-band::before{
+    content:"";position:absolute;right:-120px;top:-140px;width:420px;height:420px;border-radius:50%;
+    background:radial-gradient(circle,rgba(245,165,36,.22),transparent 65%);
+}
+.hero-band::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(ellipse 70% 90% at 80% 20%,#000 30%,transparent 75%);
+}
+.hero-band .greet{font-family:var(--fm);font-size:11px;letter-spacing:.24em;color:#FFB84A;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.hero-band .greet::before{content:"";width:6px;height:6px;border-radius:50%;background:#F5A524;box-shadow:0 0 10px #F5A524}
+.hero-band h1{
+    font-family:"Playfair Display",Georgia,"Times New Roman",serif;font-weight:700;
+    color:#FFFFFF;font-size:clamp(26px,3.1vw,38px);margin:14px 0 10px;position:relative;z-index:1;
+    letter-spacing:.005em;text-shadow:0 2px 18px rgba(0,0,0,.5);
+}
+/* gold name: solid readable color first; gradient-clip only when truly supported */
+.hero-band h1 b{color:#FFC04D}
+@supports ((-webkit-background-clip:text) or (background-clip:text)){
+    .hero-band h1 b{background:linear-gradient(92deg,#FFC857,#F5A524 50%,#FF8A1E);-webkit-background-clip:text;background-clip:text;color:transparent}
+}
+.hero-band p{color:#C3CBD8;max-width:560px;margin:0;position:relative;z-index:1;font-size:14.5px;line-height:1.6}
+.hero-band .band-meta{position:relative;z-index:1;display:flex;gap:26px;margin-top:24px;flex-wrap:wrap}
+.hero-band .band-meta span{font-family:var(--fm);font-size:10.5px;letter-spacing:.12em;color:#9AA4B6}
+.hero-band .band-meta b{color:#F4F6F9;font-weight:600}
+
+/* ---- executive overview (luxury dark panel) ---- */
+.ovx{
+    position:relative;border-radius:20px;overflow:hidden;
+    background:linear-gradient(150deg,#0C1017,#131923 55%,#18202E);
+    border:1px solid rgba(255,255,255,.08);
+    padding:30px 34px 26px;margin-bottom:28px;color:#E8EBF0;
+    opacity:0;transform:translateY(18px);animation:modIn .7s var(--ease) .1s forwards;
+}
+.ovx::before{
+    content:"";position:absolute;left:-140px;bottom:-180px;width:460px;height:460px;border-radius:50%;
+    background:radial-gradient(circle,rgba(245,165,36,.14),transparent 65%);pointer-events:none;
+}
+.ovx::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(ellipse 75% 95% at 15% 85%,#000 25%,transparent 75%);
+}
+.ovx>*{position:relative;z-index:1}
+.ovx-head{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;margin-bottom:22px}
+.ovx-eyebrow{font-family:var(--fm);font-size:10.5px;letter-spacing:.24em;color:#FFB84A;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ovx-eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:#F5A524;box-shadow:0 0 10px #F5A524}
+.ovx-head h2{
+    font-family:"Playfair Display",Georgia,"Times New Roman",serif;font-weight:700;
+    color:#fff;font-size:23px;margin:0;letter-spacing:.01em;
+}
+.ovx-head h2 b{color:#FFC04D}
+@supports ((-webkit-background-clip:text) or (background-clip:text)){
+    .ovx-head h2 b{background:linear-gradient(92deg,#FFC857,#F5A524 50%,#FF8A1E);-webkit-background-clip:text;background-clip:text;color:transparent}
+}
+.ovx-tabs{display:flex;gap:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:4px}
+.ovx-tabs button{
+    border:0;background:transparent;color:#B9C2D0;font:600 12px/1 Inter,sans-serif;
+    padding:9px 18px;border-radius:9px;cursor:pointer;letter-spacing:.04em;
+    transition:color .3s,background .3s,box-shadow .3s;
+}
+.ovx-tabs button.on{
+    color:#16110A;background:linear-gradient(92deg,#FFC857,#F5A524 60%,#FF8A1E);
+    box-shadow:0 6px 18px rgba(245,165,36,.35);
+}
+.ovx-pane{display:none}
+.ovx-pane.on{display:block;animation:ovxIn .5s var(--ease)}
+@keyframes ovxIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.ovx-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:20px}
+.ovx-kpi{
+    background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);
+    border-radius:15px;padding:17px 19px;backdrop-filter:blur(6px);
+    transition:transform .35s var(--ease),border-color .3s;
+}
+.ovx-kpi:hover{transform:translateY(-3px);border-color:rgba(245,165,36,.45)}
+.ovx-kpi .k-lab{font-family:var(--fm);font-size:10px;letter-spacing:.18em;color:#A2ACBE;text-transform:uppercase;margin-bottom:9px}
+.ovx-kpi .k-val{font-family:"Space Grotesk","Segoe UI",sans-serif;font-weight:700;font-size:clamp(19px,1.8vw,24px);color:#fff;line-height:1}
+.ovx-kpi .k-val small{font-size:11px;font-weight:600;color:#A2ACBE;margin-right:5px}
+.ovx-kpi .k-val.pos{color:#3DDC97}.ovx-kpi .k-val.neg{color:#FF6B6B}
+.ovx-kpi .k-sub{font-size:11.5px;color:#9AA4B6;margin-top:8px}
+
+.ovx-biz{display:flex;flex-direction:column;gap:4px}
+.ovx-biz-row{
+    display:grid;grid-template-columns:170px 1fr 130px 130px;gap:16px;align-items:center;
+    padding:11px 14px;border-radius:12px;transition:background .3s;
+}
+.ovx-biz-row:hover{background:rgba(255,255,255,.04)}
+.ovx-biz-row .b-name{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:#F4F6F9}
+.ovx-biz-row .b-name i{width:9px;height:9px;border-radius:3px;background:var(--bc);box-shadow:0 0 8px var(--bc);flex:none}
+.ovx-biz-row .b-bar{height:7px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+.ovx-biz-row .b-bar span{
+    display:block;height:100%;border-radius:99px;width:0;
+    background:linear-gradient(90deg,var(--bc),color-mix(in srgb,var(--bc) 55%,#fff));
+    box-shadow:0 0 10px var(--bc);transition:width 1.1s var(--ease) .25s;
+}
+.ovx-biz-row .b-amt{font-family:var(--fm);font-size:12px;color:#C3CBD8;text-align:right}
+.ovx-biz-row .b-net{font-family:var(--fm);font-size:12px;font-weight:600;text-align:right;color:#3DDC97}
+.ovx-biz-row .b-net.neg{color:#FF6B6B}
+.ovx-biz-head{display:grid;grid-template-columns:170px 1fr 130px 130px;gap:16px;padding:0 14px 7px}
+.ovx-biz-head span{font-family:var(--fm);font-size:9.5px;letter-spacing:.16em;color:#8C96A8;text-transform:uppercase}
+.ovx-biz-head span:nth-child(3),.ovx-biz-head span:nth-child(4){text-align:right}
+
+.ovx-charts{display:grid;grid-template-columns:1.7fr 1fr;gap:14px}
+.ovx-chart-card{
+    background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);
+    border-radius:15px;padding:18px;min-height:300px;
+}
+.ovx-chart-card h4{font-family:var(--fm);font-size:10px;letter-spacing:.18em;color:#A2ACBE;text-transform:uppercase;margin:0 0 14px}
+.ovx-chart-card .cwrap{position:relative;height:250px}
+.ovx-foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;flex-wrap:wrap;gap:10px}
+.ovx-foot small{font-family:var(--fm);font-size:10px;letter-spacing:.1em;color:#8C96A8}
+.ovx-more{
+    font-size:12px;font-weight:700;color:#F5A524;text-decoration:none;
+    display:inline-flex;align-items:center;gap:6px;
+}
+.ovx-more i{font-style:normal;transition:transform .3s var(--ease)}
+.ovx-more:hover{color:#FFC857}.ovx-more:hover i{transform:translateX(4px)}
+@media (max-width:900px){
+    .ovx{padding:24px 20px}
+    .ovx-charts{grid-template-columns:1fr}
+    .ovx-biz-row,.ovx-biz-head{grid-template-columns:130px 1fr 100px}
+    .ovx-biz-row .b-amt,.ovx-biz-head span:nth-child(3){display:none}
+}
+
+.sec-label{
+    font-family:var(--fm);font-size:10.5px;letter-spacing:.24em;color:#5D6577;
+    text-transform:uppercase;margin:0 0 14px;display:flex;align-items:center;gap:12px;
+}
+.sec-label::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
+
+.mod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:16px}
+.mod{
+    position:relative;display:block;text-decoration:none;
+    background:#fff;border:1px solid var(--border);border-radius:16px;
+    padding:22px;overflow:hidden;
+    transition:transform .4s var(--ease),box-shadow .4s var(--ease),border-color .3s;
+    opacity:0;transform:translateY(18px);animation:modIn .7s var(--ease) forwards;
+}
+@keyframes modIn{to{opacity:1;transform:none}}
+.mod:hover{transform:translateY(-5px);box-shadow:var(--shadow-lg);border-color:var(--mc,#F5A524)}
+.mod::after{
+    content:"";position:absolute;left:0;right:0;top:0;height:3px;
+    background:var(--mc,#F5A524);opacity:0;transform:scaleX(.3);transform-origin:left;
+    transition:opacity .35s,transform .5s var(--ease);
+}
+.mod:hover::after{opacity:1;transform:none}
+.mod .mic{
+    width:44px;height:44px;border-radius:13px;display:grid;place-items:center;
+    background:var(--mbg,#FFF6E3);color:var(--mc,#E08900);margin-bottom:16px;
+    transition:transform .45s var(--ease);
+}
+.mod:hover .mic{transform:scale(1.12) rotate(-4deg)}
+.mod .mic svg{width:21px;height:21px}
+.mod h3{font-size:15.5px;margin-bottom:5px;color:var(--ink)}
+.mod p{font-size:12.5px;color:var(--dim);margin:0 0 14px}
+.mod .go{
+    font-size:12px;font-weight:700;color:var(--mc,#E08900);
+    display:inline-flex;align-items:center;gap:6px;
+}
+.mod .go i{font-style:normal;transition:transform .3s var(--ease)}
+.mod:hover .go i{transform:translateX(4px)}
+</style>
+
+<div class="hero-band">
+    <div class="greet" id="greet">Command Center</div>
+    <h1>Welcome back, <b>{{ current_user.full_name.split(' ')[0] }}</b>.</h1>
+    <p>Five business units. One source of truth. Everything below is scoped to your
+    role — open a module to begin today's operations.</p>
+    <div class="band-meta">
+        <span>SIGNED IN AS <b>{{ current_user.username }}</b></span>
+        <span>ACCESS <b>{{ current_user.roles|map(attribute='name')|join(' · ')|upper }}</b></span>
+        <span id="todayMeta"></span>
+    </div>
+</div>
+
+{% if overview %}
+{% set s = overview.s %}
+{% set ho_overhead = s.head_office.expenses + s.head_office.vendor_payments %}
+{% set biz = [
+    ('Petrol Pumps', s.pump.revenue, s.pump.net, '#F5A524'),
+    ('Bulk Sale', s.bulk.sale, s.bulk.net, '#22B8D4'),
+    ('Carriage', s.carriage.freight, s.carriage.net, '#2FBF71'),
+    ('Oil Agency', s.agency.sale, s.agency.net, '#9B7FE8'),
+] %}
+{% set total_rev = s.pump.revenue + s.bulk.sale + s.carriage.freight + s.agency.sale %}
+<div class="ovx">
+    <div class="ovx-head">
+        <div>
+            <div class="ovx-eyebrow">Group Performance · All Business Units</div>
+            <h2>Executive <b>Overview</b></h2>
+        </div>
+        <div class="ovx-tabs" role="tablist">
+            <button type="button" class="on" data-pane="ovxSummary">Summary</button>
+            <button type="button" data-pane="ovxCharts">Analytics</button>
+        </div>
+    </div>
+
+    <div class="ovx-pane on" id="ovxSummary">
+        <div class="ovx-kpis">
+            <div class="ovx-kpi">
+                <div class="k-lab">Combined Profit / Loss</div>
+                <div class="k-val {{ 'neg' if s.combined_profit < 0 else 'pos' }}"><small>PKR</small>{{ '{:,.0f}'.format(s.combined_profit) }}</div>
+                <div class="k-sub">All businesses, all time</div>
+            </div>
+            <div class="ovx-kpi">
+                <div class="k-lab">Cash &amp; Bank</div>
+                <div class="k-val"><small>PKR</small>{{ '{:,.0f}'.format(overview.cash_total) }}</div>
+                <div class="k-sub">Across all accounts</div>
+            </div>
+            <div class="ovx-kpi">
+                <div class="k-lab">Receivables</div>
+                <div class="k-val"><small>PKR</small>{{ '{:,.0f}'.format(overview.receivables) }}</div>
+                <div class="k-sub">Customers owe us</div>
+            </div>
+            <div class="ovx-kpi">
+                <div class="k-lab">Payables</div>
+                <div class="k-val"><small>PKR</small>{{ '{:,.0f}'.format(overview.payables) }}</div>
+                <div class="k-sub">We owe vendors</div>
+            </div>
+        </div>
+
+        <div class="ovx-biz-head">
+            <span>Business</span><span>Revenue share</span><span>Revenue</span><span>Net</span>
+        </div>
+        <div class="ovx-biz">
+            {% for name, rev, net, color in biz %}
+            <div class="ovx-biz-row" style="--bc:{{ color }}">
+                <span class="b-name"><i></i>{{ name }}</span>
+                <span class="b-bar"><span data-w="{{ ((rev / total_rev * 100)|round(1)) if total_rev else 0 }}"></span></span>
+                <span class="b-amt">{{ '{:,.0f}'.format(rev) }}</span>
+                <span class="b-net {{ 'neg' if net < 0 }}">{{ '{:,.0f}'.format(net) }}</span>
+            </div>
+            {% endfor %}
+            <div class="ovx-biz-row" style="--bc:#FF8A4A">
+                <span class="b-name"><i></i>Head Office</span>
+                <span class="b-bar"><span data-w="0"></span></span>
+                <span class="b-amt">—</span>
+                <span class="b-net neg">-{{ '{:,.0f}'.format(ho_overhead) }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="ovx-pane" id="ovxCharts">
+        <div class="ovx-charts">
+            <div class="ovx-chart-card">
+                <h4>Revenue &amp; Combined Net · Last 6 Months</h4>
+                <div class="cwrap"><canvas id="ovxTrend"></canvas></div>
+            </div>
+            <div class="ovx-chart-card">
+                <h4>Net Contribution by Business</h4>
+                <div class="cwrap"><canvas id="ovxContrib"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ovx-foot">
+        <small>FIGURES ARE LIVE · FUEL COGS WEIGHTED-AVERAGE · HEAD OFFICE SHOWN AS OVERHEAD</small>
+        <a class="ovx-more" href="{{ url_for('reports.index') }}">Open full reports <i>→</i></a>
+    </div>
+</div>
+{% endif %}
+
+<div class="sec-label">Business Modules</div>
+<div class="mod-grid">
+    {% set modules = [
+        ('petrol_pumps', 'petrol_pumps.index', 'Petrol Pumps', 'Readings, tank stock, purchases, daily closing', '#E08900', '#FFF6E3',
+         '<path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16M4 21h11M15 9h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V9.5L19 7"/><path d="M7 7h5v4H7z"/>'),
+        ('bulk_sale', 'bulk_sale.index', 'Bulk Sale', 'Pump-name bulk deals, direct PSO to customer', '#0E7490', '#E6F6F9',
+         '<path d="M3 8h13v8H3zM16 10h3l2 2.5V16h-5"/><circle cx="7" cy="18" r="1.8"/><circle cx="18" cy="18" r="1.8"/>'),
+        ('carriage', 'carriage.index', 'Carriage', 'Trips, vehicles, drivers, freight profit & loss', '#15803D', '#E8F7EE',
+         '<path d="M1 16h15M16 8h4l3 4v4h-3"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M1 8h15v8"/>'),
+        ('agency', 'agency.index', 'Oil Agency', 'LDO & Kerosene purchases and sales', '#6D4FC2', '#F1EDFC',
+         '<path d="M5 21V8l7-5 7 5v13M5 21h14M9 21v-5h6v5"/>'),
+        ('head_office', 'head_office.index', 'Head Office', 'Cash receipts, expenses, vendor payments', '#B4540A', '#FDEFE3',
+         '<path d="M12 2 3 7v2h18V7l-9-5ZM5 11v7M9.5 11v7M14.5 11v7M19 11v7M3 21h18"/>'),
+        ('accounting', 'accounting.index', 'Accounting', 'Ledgers, vouchers, receivables & payables', '#1D4ED8', '#E9EFFD',
+         '<path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/>'),
+        ('master_data', 'master_data.index', 'Master Data', 'Pumps, products, customers, vendors, fleet', '#475569', '#EEF2F7',
+         '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.66 3.6 3 8 3s8-1.34 8-3V5M4 12c0 1.66 3.6 3 8 3s8-1.34 8-3"/>'),
+        ('reports', 'reports.index', 'Reports', 'Company dashboard, P&L, cash position, exports', '#BE123C', '#FDEAEF',
+         '<path d="M3 3v18h18"/><path d="m7 14 4-5 4 3 5-7"/>'),
+    ] %}
+    {% set ns = namespace(i=0) %}
+    {% for key, endpoint, name, desc, color, bg, icon in modules %}
+    {% if can_access_module(key) %}
+    <a class="mod" href="{{ url_for(endpoint) }}"
+       style="--mc:{{ color }};--mbg:{{ bg }};animation-delay:{{ ns.i * 0.07 }}s">
+        <span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">{{ icon|safe }}</svg></span>
+        <h3>{{ name }}</h3>
+        <p>{{ desc }}</p>
+        <span class="go">Open module <i>→</i></span>
+    </a>
+    {% set ns.i = ns.i + 1 %}
+    {% endif %}
+    {% endfor %}
+</div>
+
+<script>
+(function(){
+    var h=new Date().getHours(),g="Good evening";
+    if(h<12)g="Good morning";else if(h<17)g="Good afternoon";
+    document.getElementById("greet").textContent=g+" · Command Center";
+    document.getElementById("todayMeta").innerHTML=
+        "TODAY <b>"+new Date().toLocaleDateString("en-GB",{weekday:"long",day:"2-digit",month:"long",year:"numeric"}).toUpperCase()+"</b>";
+})();
+</script>
+
+{% if overview %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+"use strict";
+/* animate revenue-share bars in */
+document.querySelectorAll(".ovx-biz .b-bar span").forEach(function(b){
+    requestAnimationFrame(function(){b.style.width=b.dataset.w+"%";});
+});
+
+/* tab switching (charts are built lazily on first open so they size right) */
+var tabs=document.querySelectorAll(".ovx-tabs button"),chartsBuilt=false;
+tabs.forEach(function(btn){
+    btn.addEventListener("click",function(){
+        tabs.forEach(function(b){b.classList.toggle("on",b===btn);});
+        document.querySelectorAll(".ovx-pane").forEach(function(p){
+            p.classList.toggle("on",p.id===btn.dataset.pane);
+        });
+        if(btn.dataset.pane==="ovxCharts"&&!chartsBuilt){chartsBuilt=true;buildCharts();}
+    });
+});
+
+var trend={{ overview.trend|tojson }};
+var contrib={
+    labels:["Petrol Pumps","Bulk Sale","Carriage","Oil Agency","Head Office"],
+    values:[{{ s.pump.net }},{{ s.bulk.net }},{{ s.carriage.net }},{{ s.agency.net }},-{{ ho_overhead }}],
+    colors:["#F5A524","#22B8D4","#2FBF71","#9B7FE8","#FF8A4A"]
+};
+var compact=new Intl.NumberFormat("en",{notation:"compact",maximumFractionDigits:1});
+var full=new Intl.NumberFormat("en");
+
+function buildCharts(){
+    Chart.defaults.font.family="Inter,sans-serif";
+    Chart.defaults.font.size=10.5;
+    Chart.defaults.color="#8A93A6";
+    var grid={color:"rgba(255,255,255,.06)"},
+        tip={
+            backgroundColor:"#0C1017",borderColor:"rgba(245,165,36,.4)",borderWidth:1,
+            titleColor:"#FFC857",bodyColor:"#E8EBF0",padding:11,cornerRadius:10,
+            callbacks:{label:function(c){
+                return " "+c.dataset.label+": PKR "+full.format(Math.round(c.parsed.y));
+            }}
+        };
+
+    function bar(label,data,color){
+        return {label:label,data:data,backgroundColor:color+"CC",hoverBackgroundColor:color,
+                borderRadius:5,borderSkipped:false,stack:"rev",maxBarThickness:34};
+    }
+    new Chart(document.getElementById("ovxTrend"),{
+        data:{
+            labels:trend.labels,
+            datasets:[
+                {type:"line",label:"Combined Net",data:trend.net,borderColor:"#FFC857",
+                 backgroundColor:"#FFC857",pointBackgroundColor:"#16110A",pointBorderColor:"#FFC857",
+                 pointBorderWidth:2,pointRadius:4,borderWidth:2.5,tension:.4,order:0},
+                Object.assign(bar("Petrol Pumps",trend.pump,"#F5A524"),{type:"bar",order:1}),
+                Object.assign(bar("Bulk Sale",trend.bulk,"#22B8D4"),{type:"bar",order:1}),
+                Object.assign(bar("Carriage",trend.carriage,"#2FBF71"),{type:"bar",order:1}),
+                Object.assign(bar("Oil Agency",trend.agency,"#9B7FE8"),{type:"bar",order:1})
+            ]
+        },
+        options:{
+            responsive:true,maintainAspectRatio:false,
+            interaction:{mode:"index",intersect:false},
+            plugins:{
+                legend:{position:"bottom",labels:{boxWidth:9,boxHeight:9,usePointStyle:true,pointStyle:"rectRounded",padding:16}},
+                tooltip:tip
+            },
+            scales:{
+                x:{stacked:true,grid:{display:false}},
+                y:{stacked:true,grid:grid,border:{display:false},
+                   ticks:{callback:function(v){return compact.format(v);}}}
+            }
+        }
+    });
+
+    new Chart(document.getElementById("ovxContrib"),{
+        type:"bar",
+        data:{
+            labels:contrib.labels,
+            datasets:[{label:"Net",data:contrib.values,
+                backgroundColor:contrib.values.map(function(v,i){return v<0?"#FF6B6BCC":contrib.colors[i]+"CC";}),
+                hoverBackgroundColor:contrib.values.map(function(v,i){return v<0?"#FF6B6B":contrib.colors[i];}),
+                borderRadius:6,borderSkipped:false,maxBarThickness:26}]
+        },
+        options:{
+            indexAxis:"y",responsive:true,maintainAspectRatio:false,
+            plugins:{
+                legend:{display:false},
+                tooltip:{
+                    backgroundColor:"#0C1017",borderColor:"rgba(245,165,36,.4)",borderWidth:1,
+                    titleColor:"#FFC857",bodyColor:"#E8EBF0",padding:11,cornerRadius:10,
+                    callbacks:{label:function(c){return " Net: PKR "+full.format(Math.round(c.parsed.x));}}
+                }
+            },
+            scales:{
+                x:{grid:grid,border:{display:false},ticks:{callback:function(v){return compact.format(v);}}},
+                y:{grid:{display:false}}
+            }
+        }
+    });
+}
+})();
+</script>
+{% endif %}
+{% endblock %}

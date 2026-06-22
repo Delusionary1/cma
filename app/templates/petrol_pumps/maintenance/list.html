@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Maintenance · Petrol Pumps{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Maintenance</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Maintenance Complaints</h1>
+    <div>
+        <a href="{{ url_for('petrol_pumps.maintenance_list', export='xlsx', **filters) }}" class="btn btn-success btn-sm">Export Excel</a>
+        <a href="{{ url_for('petrol_pumps.maintenance_list', export='pdf', **filters) }}" class="btn btn-danger btn-sm">Export PDF</a>
+        <a href="{{ url_for('petrol_pumps.maintenance_create') }}" class="btn btn-primary">+ New Complaint</a>
+    </div>
+</div>
+<p class="text-muted">Track repairs and jobs (BRD §15.2): assigned vendor, estimated vs actual cost, status.</p>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-3 flex-grow-1"><input type="text" name="q" value="{{ filters.q }}" class="form-control" placeholder="Search type or description…"></div>
+    <div class="col-md-2">
+        <select name="petrol_pump_id" class="form-select">
+            <option value="">All pumps</option>
+            {% for pump in pumps %}
+            <option value="{{ pump.id }}" {{ "selected" if filters.petrol_pump_id == pump.id else "" }}>{{ pump.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="status" class="form-select">
+            <option value="">All statuses</option>
+            {% for s in statuses %}
+            <option value="{{ s }}" {{ "selected" if filters.status == s else "" }}>{{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Filter</button>
+        <a href="{{ url_for('petrol_pumps.maintenance_list') }}" class="btn btn-link">Clear</a>
+    </div>
+</form>
+
+{% if complaints %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Date</th><th>Pump</th><th>Type</th><th>Vendor</th>
+                <th class="text-end">Est. Cost</th><th class="text-end">Actual</th>
+                <th>Status</th><th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in complaints %}
+            <tr class="{{ 'opacity-50' if not c.is_active }}">
+                <td>{{ c.complaint_date.strftime("%Y-%m-%d") }}</td>
+                <td>{{ c.petrol_pump.name }}</td>
+                <td>{{ c.complaint_type }}</td>
+                <td>{{ c.assigned_vendor.name if c.assigned_vendor else "—" }}</td>
+                <td class="text-end">{{ "%.2f"|format(c.estimated_cost) if c.estimated_cost is not none else "—" }}</td>
+                <td class="text-end">{{ "%.2f"|format(c.actual_cost) if c.actual_cost is not none else "—" }}</td>
+                <td>
+                    {% if c.status == 'Completed' %}<span class="badge bg-success">Completed</span>
+                    {% elif c.status == 'In Progress' %}<span class="badge bg-info">In Progress</span>
+                    {% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ url_for('petrol_pumps.maintenance_view', complaint_id=c.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                    <a href="{{ url_for('petrol_pumps.maintenance_edit', complaint_id=c.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="post" action="{{ url_for('petrol_pumps.maintenance_delete', complaint_id=c.id) }}" class="d-inline"
+                          onsubmit="return confirm('Delete this complaint?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No maintenance complaints found.</div>
+{% endif %}
+
+<a href="{{ url_for('petrol_pumps.index') }}" class="btn btn-link">&larr; Back to Petrol Pumps</a>
+{% endblock %}

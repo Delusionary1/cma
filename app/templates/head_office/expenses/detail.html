@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Head Office Expense #{{ expense.id }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('head_office.index') }}">Head Office</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('head_office.expenses_list') }}">Expenses</a></li>
+        <li class="breadcrumb-item active" aria-current="page">#{{ expense.id }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Head Office Expense #{{ expense.id }}</h1>
+    <div>
+        <a href="{{ url_for('head_office.expenses_edit', expense_id=expense.id) }}" class="btn btn-outline-secondary">Edit</a>
+        <form method="post" action="{{ url_for('head_office.expenses_toggle_status', expense_id=expense.id) }}" class="d-inline">
+            {% if expense.is_active %}<button class="btn btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-outline-success">Activate</button>{% endif %}
+        </form>
+    </div>
+</div>
+
+{% if expense.is_posted %}
+<div class="alert alert-info">This expense decreased the balance of <strong>{{ expense.paid_from_account.name }}</strong>.</div>
+{% else %}
+<div class="alert alert-light border">This expense did not post to any account balance (no account selected, or it is inactive).</div>
+{% endif %}
+
+<table class="table">
+    <tbody>
+        <tr><th style="width:220px;">Status</th><td>{% if expense.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td></tr>
+        <tr><th>Date</th><td>{{ expense.expense_date.strftime("%Y-%m-%d") }}</td></tr>
+        <tr><th>Category</th><td>{{ expense.expense_category.name }}</td></tr>
+        <tr><th>Amount</th><td class="fw-bold">{{ "%.2f"|format(expense.amount) }}</td></tr>
+        <tr><th>Paid From</th><td>{{ expense.paid_from_account.name if expense.paid_from_account else "—" }}</td></tr>
+        <tr><th>Vendor</th><td>{{ expense.vendor.name if expense.vendor else "—" }}</td></tr>
+        <tr><th>Reference Number</th><td>{{ expense.reference_number or "—" }}</td></tr>
+        <tr><th>Notes</th><td>{{ expense.notes or "—" }}</td></tr>
+        <tr><th>Created By</th><td>{{ expense.created_by.full_name if expense.created_by else "—" }}</td></tr>
+    </tbody>
+</table>
+
+{% import "_approval.html" as appr with context %}
+{{ appr.banner('ho_expense', expense.id) }}
+
+{% import "_attachments.html" as att with context %}
+{{ att.panel('ho_expense', expense.id, 'Receipts &amp; Documents') }}
+
+<a href="{{ url_for('head_office.expenses_list') }}" class="btn btn-link">&larr; Back to Expenses</a>
+{% endblock %}

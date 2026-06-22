@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Cash Receipt #{{ receipt.id }} &middot; Head Office{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('head_office.index') }}">Head Office</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('head_office.cash_receipts_list') }}">Cash Receipts</a></li>
+        <li class="breadcrumb-item active" aria-current="page">#{{ receipt.id }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Cash Receipt #{{ receipt.id }}</h1>
+    <div>
+        <a href="{{ url_for('head_office.cash_receipts_edit', receipt_id=receipt.id) }}" class="btn btn-outline-secondary">Edit</a>
+        <form method="post" action="{{ url_for('head_office.cash_receipts_toggle_status', receipt_id=receipt.id) }}" class="d-inline">
+            {% if receipt.is_active %}<button class="btn btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-outline-success">Activate</button>{% endif %}
+        </form>
+    </div>
+</div>
+
+{% if receipt.is_posted %}
+<div class="alert alert-info">This receipt increased the balance of <strong>{{ receipt.received_into_account.name }}</strong>.</div>
+{% else %}
+<div class="alert alert-light border">This receipt did not post to any account balance (no account selected, or it is inactive).</div>
+{% endif %}
+
+<table class="table">
+    <tbody>
+        <tr><th style="width:220px;">Status</th><td>{% if receipt.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td></tr>
+        <tr><th>Date</th><td>{{ receipt.receipt_date.strftime("%Y-%m-%d") }}</td></tr>
+        <tr><th>Petrol Pump</th><td>{{ receipt.petrol_pump.name }}</td></tr>
+        <tr><th>Amount</th><td class="fw-bold">{{ "%.2f"|format(receipt.amount) }}</td></tr>
+        <tr><th>Payment Method</th><td>{{ receipt.payment_method }}</td></tr>
+        <tr><th>Received Into Account</th><td>{{ receipt.received_into_account.name if receipt.received_into_account else "—" }}</td></tr>
+        <tr>
+            <th>Linked Daily Closing</th>
+            <td>
+                {% if receipt.daily_closing %}
+                <a href="{{ url_for('petrol_pumps.daily_closings_view', closing_id=receipt.daily_closing_id) }}">#{{ receipt.daily_closing_id }} ({{ receipt.daily_closing.closing_date.strftime("%Y-%m-%d") }})</a>
+                {% else %}—{% endif %}
+            </td>
+        </tr>
+        <tr><th>Reference Number</th><td>{{ receipt.reference_number or "—" }}</td></tr>
+        <tr><th>Notes</th><td>{{ receipt.notes or "—" }}</td></tr>
+        <tr><th>Received By</th><td>{{ receipt.received_by.full_name if receipt.received_by else "—" }}</td></tr>
+    </tbody>
+</table>
+
+<a href="{{ url_for('head_office.cash_receipts_list') }}" class="btn btn-link">&larr; Back to Cash Receipts</a>
+{% endblock %}

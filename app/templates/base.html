@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CMA &amp; Co. ERP{% endblock %}</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 (component skeleton; the premium theme overrides it) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Premium theme -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+{% if current_user.is_authenticated %}
+{# ====================== SIDEBAR ====================== #}
+<aside class="sb" id="sidebar">
+    <a class="sb-brand" href="{{ url_for('core.home') }}">
+        <span class="sb-flame">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C9 7 6 9.5 6 14a6 6 0 0 0 12 0c0-4.5-3-7-6-12Z" fill="#16110A"/><path d="M12 11c-1.4 2.2-2.6 3.4-2.6 5.4a2.6 2.6 0 1 0 5.2 0c0-2-1.2-3.2-2.6-5.4Z" fill="#FFE9C2"/></svg>
+        </span>
+        <span class="sb-brand-txt">CMA &amp; Co.<small>OIL &amp; GAS COMMAND</small></span>
+    </a>
+
+    <div class="sb-scroll">
+        {# Some petrol_pumps routes are surfaced under other sections (Pump
+           Purchases → Head Office, Pump Setup → Master Data); highlight the
+           section the user navigated from, not the owning blueprint. #}
+        {% set _ep = request.endpoint or '' %}
+        {% set in_purchases = _ep.startswith('petrol_pumps.purchases') %}
+        {% set in_setup = _ep.startswith('petrol_pumps.setup') or _ep.startswith('petrol_pumps.machines') or _ep.startswith('petrol_pumps.nozzles') or _ep.startswith('petrol_pumps.tanks') %}
+        <div class="sb-label">Overview</div>
+        <a class="sb-link {{ 'on' if request.endpoint == 'core.home' }}" href="{{ url_for('core.home') }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></svg>
+            <span>Home</span>
+        </a>
+        {% if can_access_module('reports') %}
+        <a class="sb-link {{ 'on' if request.blueprint == 'reports' }}" href="{{ url_for('reports.index') }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 3v18h18"/><path d="m7 14 4-5 4 3 5-7"/></svg>
+            <span>Reports</span>
+        </a>
+        {% endif %}
+        {# Approvals disabled (2026-06-21) — everything auto. Re-enable by
+           restoring this nav link + needs_approval() in approvals/service.py.
+        {% if can_approve_entries %}
+        <a class="sb-link {{ 'on' if request.blueprint == 'approvals' }}" href="{{ url_for('approvals.index') }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 5-3.5 7.5-8.5 9.5C7.5 19.5 3 17 3 12V5l9-3 9 3z"/></svg>
+            <span>Approvals</span>
+            {% if approvals_pending %}<span class="sb-badge">{{ approvals_pending }}</span>{% endif %}
+        </a>
+        {% endif %}
+        #}
+
+        <div class="sb-label">Business Units</div>
+        {% if can_access_module('petrol_pumps') %}
+        <a class="sb-link {{ 'on' if request.blueprint == 'petrol_pumps' and not in_purchases and not in_setup }}" href="{{ url_for('petrol_pumps.index') }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16M4 21h11M15 9h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V9.5L19 7"/><path d="M7 7h5v4H7z"/></svg>
+            <span>Petrol Pumps</span>
+        </a>
+        {% endif %}
+        {% if can_access_module('bulk_sale') %}
+        <a class="sb-link {{ 'on' if request.blueprint == 'bulk_sale' }}" href="{{ url_for('bulk_sale.index') }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 8h13v8H3zM16 10h3l2 2.5V16h-5"/><circle cx="7" cy="18" r="1.8"/><circle cx="18" cy="18" r="1.8"/></svg>
+            <span>Bulk Sale</span>
+        </a>
+        {% endif %}
+        {% if can_access_module('carriage') %}
+        <a class="sb-link {{ 'on' if request.blueprint == 'carriage' }}" href="{{ url_for('carriage.index') }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M1 16h15M16 8h4l3 4v4h-3"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M1 8h15v8"/></svg>
+            <span>Carriage</span>
+        </a>
+        {% endif %}
+        {% if can_access_module('agency') %}
+        <a class="sb-link {{ 'on' if request.blueprint == 'agency' }}" href="{{ url_for('agency.index') }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M5 21V8l7-5 7 5v13M5 21h14M9 21v-5h6v5"/></svg>
+            <span>Oil Agency</span>
+        </a>
+        {% endif %}
+        {% if can_access_module('head_office') %}
+        <a class="sb-link {{ 'on' if request.blueprint == 'head_office' or in_purchases }}" href="{{ url_for('head_office.index') }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 2 3 7v2h18V7l-9-5ZM5 11v7M9.5 11v7M14.5 11v7M19 11v7M3 21h18"/></svg>
+            <span>Head Office</span>
+        </a>
+        {% endif %}
+
+        <div class="sb-label">Records</div>
+        {% if can_access_module('accounting') %}
+        <a class="sb-link {{ 'on' if request.blueprint == 'accounting' }}" href="{{ url_for('accounting.index') }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/></svg>
+            <span>Accounting</span>
+        </a>
+        {% endif %}
+        {% if can_access_module('master_data') %}
+        <a class="sb-link {{ 'on' if request.blueprint == 'master_data' or in_setup }}" href="{{ url_for('master_data.index') }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.66 3.6 3 8 3s8-1.34 8-3V5M4 12c0 1.66 3.6 3 8 3s8-1.34 8-3"/></svg>
+            <span>Master Data</span>
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="sb-foot">
+        <div class="sb-user">
+            <span class="sb-ava">{{ current_user.full_name[:1]|upper }}{{ (current_user.full_name.split(' ')[1][:1]|upper) if current_user.full_name.split(' ')|length > 1 else '' }}</span>
+            <span class="sb-user-meta">
+                <b>{{ current_user.full_name }}</b>
+                <small>{{ current_user.roles|map(attribute='name')|join(', ') }}</small>
+            </span>
+        </div>
+        <a class="sb-logout" href="{{ url_for('auth.logout') }}" title="Sign out">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        </a>
+    </div>
+</aside>
+<div class="sb-backdrop" id="sbBackdrop"></div>
+
+{# ====================== TOPBAR ====================== #}
+<header class="topbar">
+    <button class="tb-burger" id="sbToggle" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <div class="tb-title">{{ self.title() }}</div>
+    <div class="tb-right">
+        <span class="tb-clock mono" id="tbClock"></span>
+        <span class="tb-dot"></span>
+        <span class="tb-live mono">LIVE</span>
+    </div>
+</header>
+{% endif %}
+
+{# ====================== CONTENT ====================== #}
+<main class="app-main {{ 'no-shell' if not current_user.is_authenticated }}">
+    <div class="page-enter">
+        {% block content %}{% endblock %}
+    </div>
+    <footer class="app-foot">
+        <small>Ch. Muhammad Asghar &amp; Co. — Private Oil &amp; Gas Command Suite</small>
+    </footer>
+</main>
+
+{# ====================== FLASH TOASTS ====================== #}
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="toast-stack" id="toastStack">
+    {% for category, message in messages %}
+    <div class="toastx t-{{ category }}">
+        <span class="toastx-bar"></span>
+        <span class="toastx-msg">{{ message }}</span>
+        <button class="toastx-x" onclick="this.parentElement.classList.add('bye')">&times;</button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function(){
+"use strict";
+/* sidebar toggle (mobile) */
+var toggle=document.getElementById("sbToggle"),
+    sb=document.getElementById("sidebar"),
+    bd=document.getElementById("sbBackdrop");
+if(toggle&&sb){
+    toggle.addEventListener("click",function(){document.body.classList.toggle("sb-open");});
+    bd.addEventListener("click",function(){document.body.classList.remove("sb-open");});
+}
+/* topbar clock */
+var clk=document.getElementById("tbClock");
+if(clk){
+    function tick(){
+        var d=new Date();
+        clk.textContent=d.toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short"})+" · "+
+                        d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+    }
+    tick();setInterval(tick,30000);
+}
+/* auto-dismiss toasts */
+document.querySelectorAll(".toastx").forEach(function(t,i){
+    setTimeout(function(){t.classList.add("bye");},4200+i*450);
+    t.addEventListener("animationend",function(e){if(e.animationName==="toastOut")t.remove();});
+});
+/* default any EMPTY date field to today (so it never has to be typed). Skips
+   filter forms (method=get, where blank means "all dates") and any input
+   marked data-no-today, so list history filters keep working. */
+(function(){
+    var d=new Date();
+    var today=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    document.querySelectorAll('input[type="date"]').forEach(function(el){
+        if(el.value)return;
+        if(el.hasAttribute("data-no-today"))return;
+        var f=el.closest("form");
+        if(f&&(f.getAttribute("method")||"").toLowerCase()==="get")return;
+        el.value=today;
+    });
+})();
+})();
+</script>
+</body>
+</html>

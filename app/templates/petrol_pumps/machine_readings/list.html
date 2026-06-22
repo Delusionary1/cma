@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Machine Readings &middot; Petrol Pumps{% endblock %}
+
+{% block content %}
+{% from "petrol_pumps/_pump_lock.html" import pump_lock %}
+{% set sel_pump = (pumps|selectattr('id','equalto',filters.petrol_pump_id)|first) if filters.petrol_pump_id else None %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Machine Readings</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Machine Readings{% if pump %} — {{ pump.name }}{% endif %}</h1>
+    <div>
+        <a href="{{ url_for('petrol_pumps.machine_readings_list', export='xlsx', **filters) }}" class="btn btn-success btn-sm">Export Excel</a>
+        <a href="{{ url_for('petrol_pumps.machine_readings_list', export='pdf', **filters) }}" class="btn btn-danger btn-sm">Export PDF</a>
+        <a href="{{ url_for('petrol_pumps.machine_readings_console', pump=filters.petrol_pump_id) }}" class="btn btn-primary">+ New Reading</a>
+    </div>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-2">
+        <input type="date" name="date" value="{{ filters.date }}" class="form-control">
+    </div>
+    <div class="col-md-2">
+        <select name="machine_id" class="form-select">
+            <option value="">All machines</option>
+            {% for machine in machines %}
+            <option value="{{ machine.id }}" {{ "selected" if filters.machine_id == machine.id else "" }}>{{ machine.petrol_pump.name }} - {{ machine.machine_name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="nozzle_id" class="form-select">
+            <option value="">All nozzles</option>
+            {% for nozzle in nozzles %}
+            <option value="{{ nozzle.id }}" {{ "selected" if filters.nozzle_id == nozzle.id else "" }}>{{ nozzle.machine.machine_name }} - {{ nozzle.nozzle_number }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="product_id" class="form-select">
+            <option value="">All products</option>
+            {% for product in products %}
+            <option value="{{ product.id }}" {{ "selected" if filters.product_id == product.id else "" }}>{{ product.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-outline-secondary">Filter</button>
+        <a href="{{ url_for('petrol_pumps.machine_readings_list', petrol_pump_id=filters.petrol_pump_id) }}" class="btn btn-link">Clear</a>
+    </div>
+</form>
+
+{% if readings %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Date</th><th>Pump</th><th>Machine</th><th>Nozzle</th><th>Product</th>
+                <th>Shift</th>
+                <th class="text-end">Opening</th><th class="text-end">Closing</th>
+                <th class="text-end">Sale Liters</th><th class="text-end">Rate</th>
+                <th class="text-end">Sale Amount</th>
+                <th>Status</th><th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in readings %}
+            <tr>
+                <td>{{ r.reading_date.strftime("%Y-%m-%d") }}</td>
+                <td>{{ r.petrol_pump.name }}</td>
+                <td>{{ r.machine.machine_name }}</td>
+                <td>{{ r.nozzle.nozzle_number }}</td>
+                <td>{{ r.product.name }}</td>
+                <td>{{ r.shift }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.opening_reading) }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.closing_reading) }}</td>
+                <td class="text-end fw-semibold">{{ "%.2f"|format(r.sale_liters) }}</td>
+                <td class="text-end">{{ "%.2f"|format(r.rate) }}</td>
+                <td class="text-end fw-semibold">{{ "%.2f"|format(r.sale_amount) }}</td>
+                <td>
+                    {% if r.is_active %}<span class="badge bg-success">Active</span>
+                    {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ url_for('petrol_pumps.machine_readings_view', reading_id=r.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                    <a href="{{ url_for('petrol_pumps.machine_readings_edit', reading_id=r.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="post" action="{{ url_for('petrol_pumps.machine_readings_toggle_status', reading_id=r.id) }}" class="d-inline">
+                        {% if r.is_active %}
+                        <button type="submit" class="btn btn-sm btn-outline-warning">Deactivate</button>
+                        {% else %}
+                        <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
+                        {% endif %}
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No machine readings found.</div>
+{% endif %}
+
+<a href="{{ url_for('petrol_pumps.index') }}" class="btn btn-link">&larr; Back to Petrol Pumps</a>
+{% endblock %}

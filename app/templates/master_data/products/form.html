@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {{ "Edit" if mode == "edit" else "New" }} Product &middot; Master Data
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.products_list') }}">Products</a></li>
+        <li class="breadcrumb-item active" aria-current="page">
+            {{ "Edit" if mode == "edit" else "New" }}
+        </li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">{{ "Edit Product" if mode == "edit" else "New Product" }}</h1>
+
+{% if not categories %}
+<div class="alert alert-warning">
+    There are no active product categories. Please create or activate one
+    before adding a product.
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-12 col-lg-8">
+        <form method="post">
+            <div class="mb-3">
+                <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="name" name="name"
+                       value="{{ form.name }}" required>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="category_id" class="form-label">
+                        Category <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="category_id" name="category_id" required>
+                        <option value="" disabled
+                            {{ "selected" if not form.category_id else "" }}>
+                            -- Select a category --
+                        </option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}"
+                            {{ "selected" if form.category_id == category.id else "" }}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="unit" class="form-label">
+                        Unit <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="unit" name="unit" required>
+                        <option value="" disabled
+                            {{ "selected" if not form.unit else "" }}>
+                            -- Select a unit --
+                        </option>
+                        {% for unit in units %}
+                        <option value="{{ unit }}"
+                            {{ "selected" if form.unit == unit else "" }}>
+                            {{ unit }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="default_purchase_rate" class="form-label">Default Purchase Rate</label>
+                    <input type="number" step="0.01" min="0" class="form-control"
+                           id="default_purchase_rate" name="default_purchase_rate"
+                           value="{{ form.default_purchase_rate }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="default_sale_rate" class="form-label">Default Sale Rate</label>
+                    <input type="number" step="0.01" min="0" class="form-control"
+                           id="default_sale_rate" name="default_sale_rate"
+                           value="{{ form.default_sale_rate }}">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="linked_stock_account_name" class="form-label">Linked Stock Account Name</label>
+                <input type="text" class="form-control" id="linked_stock_account_name"
+                       name="linked_stock_account_name"
+                       value="{{ form.linked_stock_account_name }}">
+            </div>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="is_active"
+                       name="is_active" {{ "checked" if form.is_active else "" }}>
+                <label class="form-check-label" for="is_active">Active</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                {{ "Save Changes" if mode == "edit" else "Create" }}
+            </button>
+            {% if mode == "edit" %}
+            <a href="{{ url_for('master_data.products_view', product_id=product.id) }}"
+               class="btn btn-link">Cancel</a>
+            {% else %}
+            <a href="{{ url_for('master_data.products_list') }}"
+               class="btn btn-link">Cancel</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}

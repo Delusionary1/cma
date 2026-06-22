@@ -1,0 +1,27 @@
+{% extends "reports/dashboards/_base.html" %}
+{% import "reports/dashboards/_macros.html" as w %}
+
+{% block dash %}
+<div class="dgrid">
+    {{ w.kpi("Total Trips", d.total_trips, "#F5A524", money=False) }}
+    {{ w.kpi("Freight Income", d.summary.freight, "#0E7490") }}
+    {{ w.kpi("Trip Expenses", d.summary.expenses, "#A16207") }}
+    {{ w.kpi("Net Profit", d.summary.net, "#15803D") }}
+</div>
+
+<div class="dpanel-grid">
+    <div class="dpanel">
+        <h2>Trips by Vehicle Type</h2>
+        {{ w.bars(d.ownership, "name", "count", "#6D4FC2", money=False) }}
+    </div>
+    <div class="dpanel">
+        <h2>Trip Status</h2>
+        {{ w.chips(d.statuses, "name", "count") }}
+    </div>
+</div>
+
+<div class="dpanel">
+    <h2>Net Profit by Vehicle Type</h2>
+    {{ w.bars(d.ownership, "name", "profit", "#15803D") }}
+</div>
+{% endblock %}

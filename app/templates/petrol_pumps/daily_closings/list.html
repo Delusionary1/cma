@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Closings &middot; Petrol Pumps{% endblock %}
+
+{% block content %}
+{% from "petrol_pumps/_pump_lock.html" import pump_lock %}
+{% set sel_pump = (pumps|selectattr('id','equalto',filters.petrol_pump_id)|first) if filters.petrol_pump_id else None %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('petrol_pumps.index') }}">Petrol Pumps</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Daily Closings</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Daily Closings{% if pump %} — {{ pump.name }}{% endif %}</h1>
+    <a href="{{ url_for('petrol_pumps.daily_closings_create', petrol_pump_id=filters.petrol_pump_id) }}" class="btn btn-primary">+ New Closing</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-3"><input type="date" name="date" value="{{ filters.date }}" class="form-control"></div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Filter</button>
+        <a href="{{ url_for('petrol_pumps.daily_closings_list', petrol_pump_id=filters.petrol_pump_id) }}" class="btn btn-link">Clear</a>
+    </div>
+</form>
+
+{% if closings %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead><tr><th>Date</th><th>Pump</th><th class="text-end">Fuel</th><th class="text-end">Lubricant</th><th class="text-end">Total Sale</th><th class="text-end">Expenses</th><th class="text-end">Expected Cash</th><th class="text-end">Submitted</th><th class="text-end">Difference</th><th>Approved</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+        <tbody>
+            {% for cl in closings %}
+            <tr>
+                <td>{{ cl.closing_date.strftime("%Y-%m-%d") }}</td>
+                <td>{{ cl.petrol_pump.name }}</td>
+                <td class="text-end">{{ "%.2f"|format(cl.fuel_sale_amount) }}</td>
+                <td class="text-end">{{ "%.2f"|format(cl.lubricant_sale_amount) }}</td>
+                <td class="text-end fw-semibold">{{ "%.2f"|format(cl.total_sale_amount) }}</td>
+                <td class="text-end">{{ "%.2f"|format(cl.expenses_paid) }}</td>
+                <td class="text-end">{{ "%.2f"|format(cl.expected_cash_to_submit) }}</td>
+                <td class="text-end">{{ "%.2f"|format(cl.cash_submitted_to_head_office) }}</td>
+                <td class="text-end {{ 'text-danger' if cl.difference_amount != 0 else '' }}">{{ "%.2f"|format(cl.difference_amount) }}</td>
+                <td>{% if cl.manager_approved %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-secondary">No</span>{% endif %}</td>
+                <td>{% if cl.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ url_for('petrol_pumps.daily_closings_view', closing_id=cl.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                    <a href="{{ url_for('petrol_pumps.daily_closings_edit', closing_id=cl.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="post" action="{{ url_for('petrol_pumps.daily_closings_toggle_status', closing_id=cl.id) }}" class="d-inline">
+                        {% if cl.is_active %}<button class="btn btn-sm btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-sm btn-outline-success">Activate</button>{% endif %}
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No daily closings yet for this date — enter it below.</div>
+{% endif %}
+
+{% if entry_done %}
+<div class="alert alert-success mt-2">
+    Closing for <strong>{{ entry_date.strftime("%d %b %Y") }}</strong> is already done.
+    <a href="{{ url_for('petrol_pumps.daily_closings_view', closing_id=entry_done.id) }}">View</a> ·
+    <a href="{{ url_for('petrol_pumps.daily_closings_edit', closing_id=entry_done.id) }}">Edit</a>
+</div>
+{% elif entry %}
+<hr class="my-4">
+<h2 class="h4 mb-3">Enter {{ entry_date.strftime("%d %b %Y") }} Closing{% if pump %} — {{ pump.name }}{% endif %}</h2>
+{% with mode="create", form=entry.form, preview=entry.preview, method_accounts=entry.method_accounts, credit_customers=entry.credit_customers %}
+{% include "petrol_pumps/daily_closings/_closing_entry.html" %}
+{% endwith %}
+{% endif %}
+
+<a href="{{ url_for('petrol_pumps.index') }}" class="btn btn-link">&larr; Back to Petrol Pumps</a>
+{% endblock %}

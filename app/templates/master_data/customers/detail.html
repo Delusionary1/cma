@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}{{ customer.name }} &middot; Customers{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('core.home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.index') }}">Master Data</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('master_data.customers_list') }}">Customers</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ customer.name }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{{ customer.name }}</h1>
+    <div>
+        <a href="{{ url_for('master_data.customers_edit', customer_id=customer.id) }}"
+           class="btn btn-outline-secondary">Edit</a>
+        <form method="post"
+              action="{{ url_for('master_data.customers_toggle_status', customer_id=customer.id) }}"
+              class="d-inline">
+            {% if customer.is_active %}
+            <button type="submit" class="btn btn-outline-warning">Deactivate</button>
+            {% else %}
+            <button type="submit" class="btn btn-outline-success">Activate</button>
+            {% endif %}
+        </form>
+        <form method="post"
+              action="{{ url_for('master_data.customers_delete', customer_id=customer.id) }}"
+              class="d-inline"
+              onsubmit="return confirm('Permanently delete customer \'{{ customer.name|e }}\'? This cannot be undone.');">
+            <button type="submit" class="btn btn-outline-danger">Delete</button>
+        </form>
+    </div>
+</div>
+
+<table class="table">
+    <tbody>
+        <tr>
+            <th style="width: 220px;">Status</th>
+            <td>
+                {% if customer.is_active %}
+                <span class="badge bg-success">Active</span>
+                {% else %}
+                <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>Business Unit</th>
+            <td>
+                <a href="{{ url_for('master_data.business_units_view', unit_id=customer.business_unit_id) }}">
+                    {{ customer.business_unit.name }}
+                </a>
+            </td>
+        </tr>
+        {% if customer.petrol_pump %}
+        <tr><th>Petrol Pump</th><td>{{ customer.petrol_pump.name }}</td></tr>
+        {% endif %}
+        <tr><th>Business Type</th><td>{{ customer.business_type or "—" }}</td></tr>
+        <tr><th>CNIC / NTN</th><td>{{ customer.cnic_ntn or "—" }}</td></tr>
+        <tr><th>Phone Number</th><td>{{ customer.phone_number or "—" }}</td></tr>
+        <tr><th>Contact Person</th><td>{{ customer.contact_person or "—" }}</td></tr>
+        <tr><th>Address</th><td>{{ customer.address or "—" }}</td></tr>
+        <tr><th>Opening Balance</th><td>{{ "%.2f"|format(customer.opening_balance) }}</td></tr>
+        <tr>
+            <th>Credit Limit</th>
+            <td>{{ "%.2f"|format(customer.credit_limit) if customer.credit_limit is not none else "—" }}</td>
+        </tr>
+        <tr><th>Created</th><td>{{ customer.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+        <tr><th>Updated</th><td>{{ customer.updated_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+    </tbody>
+</table>
+
+<a href="{{ url_for('master_data.customers_list') }}" class="btn btn-link">
+    &larr; Back to Customers
+</a>
+{% endblock %}
