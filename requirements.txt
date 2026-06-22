@@ -11,5 +11,8 @@ reportlab>=4.0     # PDF export
 # Reserved for upcoming tasks (forms). Uncomment when you reach them:
 # Flask-WTF>=1.2
 
-# PostgreSQL driver for production. Uncomment when you switch from SQLite:
+# MySQL / MariaDB driver for production (shared cPanel hosting).
+PyMySQL>=1.1
+
+# PostgreSQL driver — only if you move to a host that offers Postgres:
 # psycopg2-binary>=2.9
