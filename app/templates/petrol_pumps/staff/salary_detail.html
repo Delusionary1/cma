@@ -41,8 +41,9 @@
         <div class="card text-bg-light"><div class="card-body">
             <div class="text-muted small">Type</div>
             <div class="h5 mb-0">
-                {% if payment.payment_type == 'Advance' %}<span class="badge bg-warning text-dark">Advance</span>
-                {% else %}<span class="badge bg-info">Salary</span>{% endif %}
+                {% if payment.payment_type == 'Fine' %}<span class="badge bg-danger">Fine (deduction)</span>
+                {% elif payment.payment_type == 'Advance' %}<span class="badge bg-warning text-dark">Advance</span>
+                {% else %}<span class="badge bg-info">{{ payment.payment_type }}</span>{% endif %}
             </div>
         </div></div>
     </div>

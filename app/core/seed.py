@@ -33,7 +33,7 @@ BUSINESS_UNITS = [
     ("Head Office", BusinessUnitType.HEAD_OFFICE),
 ]
 
-PETROL_PUMP_NAMES = ["Pump 1", "Pump 2", "Pump 3"]
+PETROL_PUMP_NAMES = ["Punjab Petroleum", "Ahmed Filling Station", "Alfateh Petroleum"]
 
 # Default vendors: (vendor name, vendor type, business unit type).
 DEFAULT_VENDORS = [

@@ -12,7 +12,7 @@
     </ol>
 </nav>
 
-<h1 class="h3 mb-4">{{ "New Salary / Advance Payment" if mode == "create" else "Edit Salary Payment" }}</h1>
+<h1 class="h3 mb-4">{{ "New Salary Payment" if mode == "create" else "Edit Salary Payment" }}</h1>
 
 <form method="post" class="card" style="max-width:720px">
     <div class="card-body">
@@ -49,7 +49,8 @@
                 <input type="text" class="form-control" id="for_month" name="for_month" value="{{ form.for_month }}" placeholder="e.g. June 2026" maxlength="40">
             </div>
             <div class="col-12">
-                <div class="alert alert-secondary mb-0 py-2">This payment is deducted from <strong>{{ "the pump's" }}</strong> cash (just like a pump expense) — it reduces the pump's available cash for the day.</div>
+                <div class="alert alert-secondary mb-0 py-2" id="pay_note"
+                     data-fine-type="{{ fine_type }}">This payment is deducted from <strong>the pump's</strong> cash (just like a pump expense) — it reduces the pump's available cash for the day.</div>
             </div>
             <div class="col-12">
                 <label class="form-label" for="notes">Notes</label>
@@ -68,4 +69,28 @@
         <a href="{{ url_for('petrol_pumps.salary_payments_list') }}" class="btn btn-outline-secondary">Cancel</a>
     </div>
 </form>
+
+<script>
+(function () {
+    var typeSel = document.getElementById('payment_type');
+    var note = document.getElementById('pay_note');
+    var fineType = note.getAttribute('data-fine-type');
+    var normalHtml = note.innerHTML;
+    var fineHtml = 'A <strong>Fine</strong> is deducted from the employee\'s salary due '
+        + '(it lowers what the pump still owes them) — it does <strong>not</strong> reduce the pump\'s cash.';
+    function refresh() {
+        if (typeSel.value === fineType) {
+            note.classList.remove('alert-secondary');
+            note.classList.add('alert-warning');
+            note.innerHTML = fineHtml;
+        } else {
+            note.classList.remove('alert-warning');
+            note.classList.add('alert-secondary');
+            note.innerHTML = normalHtml;
+        }
+    }
+    typeSel.addEventListener('change', refresh);
+    refresh();
+})();
+</script>
 {% endblock %}

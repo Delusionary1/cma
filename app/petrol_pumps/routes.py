@@ -66,12 +66,16 @@ from app.petrol_pumps.models import (
     ADJUSTMENT_STATUS_APPROVED,
     ADJUSTMENT_STATUS_REJECTED,
     PumpStaff,
+    SALARY_COMPONENTS,
     STAFF_DESIGNATIONS,
     STAFF_SHIFTS,
     PumpAttendance,
     PumpSalaryPayment,
     ATTENDANCE_STATUSES,
     SALARY_PAYMENT_TYPES,
+    SALARY_COMPONENT_LABELS,
+    SALARY_PAID_TYPES,
+    SALARY_FINE_TYPE,
     DailyChecklist,
     DailyChecklistItem,
     CHECKLIST_ITEMS,
@@ -1981,15 +1985,21 @@ def _read_staff_form():
         "phone_number": request.form.get("phone_number", "").strip(),
         "emergency_contact": request.form.get("emergency_contact", "").strip(),
         "address": request.form.get("address", "").strip(),
-        "monthly_salary": request.form.get("monthly_salary", "").strip(),
         "joining_date": request.form.get("joining_date", "").strip(),
         "notes": request.form.get("notes", "").strip(),
         "is_active": bool(request.form.get("is_active")),
+        **{field: request.form.get(field, "").strip()
+           for field, _ in SALARY_COMPONENTS},
     }
 
 
 def _validate_staff_form(form):
-    """Validate a staff entry. Returns (errors, pump, salary, joining_date)."""
+    """Validate a staff entry.
+
+    Returns (errors, pump, salary_parts, monthly_salary, joining_date) where
+    salary_parts is a dict of the six breakdown components and monthly_salary is
+    their sum.
+    """
     errors = []
 
     pump = None
@@ -2011,9 +2021,12 @@ def _validate_staff_form(form):
     if form["shift"] and form["shift"] not in STAFF_SHIFTS:
         errors.append("Please select a valid shift.")
 
-    salary = _parse_nonneg(
-        form["monthly_salary"], "Monthly salary", errors, default=Decimal("0")
-    )
+    salary_parts = {}
+    for field, label in SALARY_COMPONENTS:
+        salary_parts[field] = _parse_nonneg(
+            form[field], label, errors, default=Decimal("0")
+        )
+    monthly_salary = sum(salary_parts.values(), Decimal("0"))
 
     joining_date = None
     if form["joining_date"]:
@@ -2022,7 +2035,7 @@ def _validate_staff_form(form):
         except ValueError:
             errors.append("Please enter a valid joining date.")
 
-    return errors, pump, salary, joining_date
+    return errors, pump, salary_parts, monthly_salary, joining_date
 
 
 def _staff_form_choices():
@@ -2030,6 +2043,7 @@ def _staff_form_choices():
         "pumps": _active_pumps(),
         "designations": STAFF_DESIGNATIONS,
         "shifts": STAFF_SHIFTS,
+        "salary_components": SALARY_COMPONENTS,
     }
 
 
@@ -2093,7 +2107,7 @@ def staff_list():
 def staff_create():
     if request.method == "POST":
         form = _read_staff_form()
-        errors, pump, salary, joining_date = _validate_staff_form(form)
+        errors, pump, salary_parts, monthly_salary, joining_date = _validate_staff_form(form)
         if errors:
             for m in errors:
                 flash(m, "danger")
@@ -2106,9 +2120,10 @@ def staff_create():
             designation=form["designation"], shift=form["shift"] or None,
             cnic=form["cnic"] or None, phone_number=form["phone_number"] or None,
             emergency_contact=form["emergency_contact"] or None,
-            address=form["address"] or None, monthly_salary=salary,
+            address=form["address"] or None, monthly_salary=monthly_salary,
             joining_date=joining_date, notes=form["notes"] or None,
             created_by_id=current_user.id, is_active=form["is_active"],
+            **salary_parts,
         )
         db.session.add(staff)
         db.session.commit()
@@ -2119,8 +2134,9 @@ def staff_create():
         "petrol_pump_id": _selected_pump_id(_active_pumps()),
         "employee_name": "", "designation": "",
         "shift": "", "cnic": "", "phone_number": "", "emergency_contact": "",
-        "address": "", "monthly_salary": "", "joining_date": "", "notes": "",
+        "address": "", "joining_date": "", "notes": "",
         "is_active": True,
+        **{field: "" for field, _ in SALARY_COMPONENTS},
     }
     return render_template(
         "petrol_pumps/staff/form.html",
@@ -2141,7 +2157,7 @@ def staff_edit(staff_id):
     staff = db.get_or_404(PumpStaff, staff_id)
     if request.method == "POST":
         form = _read_staff_form()
-        errors, pump, salary, joining_date = _validate_staff_form(form)
+        errors, pump, salary_parts, monthly_salary, joining_date = _validate_staff_form(form)
         if errors:
             for m in errors:
                 flash(m, "danger")
@@ -2157,7 +2173,9 @@ def staff_edit(staff_id):
         staff.phone_number = form["phone_number"] or None
         staff.emergency_contact = form["emergency_contact"] or None
         staff.address = form["address"] or None
-        staff.monthly_salary = salary
+        for field, value in salary_parts.items():
+            setattr(staff, field, value)
+        staff.monthly_salary = monthly_salary
         staff.joining_date = joining_date
         staff.notes = form["notes"] or None
         staff.is_active = form["is_active"]
@@ -2174,10 +2192,10 @@ def staff_edit(staff_id):
         "phone_number": staff.phone_number or "",
         "emergency_contact": staff.emergency_contact or "",
         "address": staff.address or "",
-        "monthly_salary": str(staff.monthly_salary),
         "joining_date": staff.joining_date.isoformat() if staff.joining_date else "",
         "notes": staff.notes or "",
         "is_active": staff.is_active,
+        **{field: str(getattr(staff, field)) for field, _ in SALARY_COMPONENTS},
     }
     return render_template(
         "petrol_pumps/staff/form.html",
@@ -2427,6 +2445,7 @@ def _salary_form_choices(pump_id=None):
         "staff": _all_staff(pump_id),
         "accounts": _active_accounts(),
         "payment_types": SALARY_PAYMENT_TYPES,
+        "fine_type": SALARY_FINE_TYPE,
     }
 
 
@@ -2506,18 +2525,21 @@ def salary_report():
 
     rows = []
     totals = {"due": Decimal("0"), "salary_paid": Decimal("0"),
-              "advance": Decimal("0"), "paid_total": Decimal("0"),
-              "remaining": Decimal("0")}
+              "advance": Decimal("0"), "fine": Decimal("0"),
+              "paid_total": Decimal("0"), "remaining": Decimal("0")}
     if pump is not None:
         staff = (PumpStaff.query
                  .filter_by(petrol_pump_id=pump.id, is_active=True)
                  .order_by(PumpStaff.employee_name).all())
         for st in staff:
+            # Salary paid = the sum of every salary-component payment (Basic +
+            # allowances); Advance and Fine are tracked separately. A Fine is
+            # withheld from the employee, so it reduces what is still owed.
             salary_paid = _sum(
                 PumpSalaryPayment.amount,
                 PumpSalaryPayment.staff_id == st.id,
                 PumpSalaryPayment.is_active.is_(True),
-                PumpSalaryPayment.payment_type == "Salary",
+                PumpSalaryPayment.payment_type.in_(SALARY_PAID_TYPES),
                 PumpSalaryPayment.payment_date >= d_from,
                 PumpSalaryPayment.payment_date <= d_to,
             )
@@ -2529,16 +2551,26 @@ def salary_report():
                 PumpSalaryPayment.payment_date >= d_from,
                 PumpSalaryPayment.payment_date <= d_to,
             )
+            fine = _sum(
+                PumpSalaryPayment.amount,
+                PumpSalaryPayment.staff_id == st.id,
+                PumpSalaryPayment.is_active.is_(True),
+                PumpSalaryPayment.payment_type == SALARY_FINE_TYPE,
+                PumpSalaryPayment.payment_date >= d_from,
+                PumpSalaryPayment.payment_date <= d_to,
+            )
             due = st.monthly_salary or Decimal("0")
             paid_total = salary_paid + advance
-            remaining = due - paid_total
+            remaining = due - paid_total - fine
             rows.append({
                 "staff": st, "due": due, "salary_paid": salary_paid,
-                "advance": advance, "paid_total": paid_total, "remaining": remaining,
+                "advance": advance, "fine": fine,
+                "paid_total": paid_total, "remaining": remaining,
             })
             totals["due"] += due
             totals["salary_paid"] += salary_paid
             totals["advance"] += advance
+            totals["fine"] += fine
             totals["paid_total"] += paid_total
             totals["remaining"] += remaining
 
@@ -2547,11 +2579,12 @@ def salary_report():
         out = [[
             r["staff"].employee_name, r["staff"].designation,
             fmt(r["due"]), fmt(r["salary_paid"]), fmt(r["advance"]),
-            fmt(r["paid_total"]), fmt(r["remaining"]),
+            fmt(r["fine"]), fmt(r["paid_total"]), fmt(r["remaining"]),
         ] for r in rows]
         blocks = [{
             "headers": ["Employee", "Designation", "Monthly Salary",
-                        "Salary Paid", "Advance Taken", "Total Paid", "Remaining"],
+                        "Salary Paid", "Advance Taken", "Fine", "Total Paid",
+                        "Remaining"],
             "rows": out,
         }]
         title = f"Salary Report — {pump.name if pump else ''} ({d_from} to {d_to})"
@@ -2588,14 +2621,18 @@ def salary_payments_create():
         db.session.flush()  # populate paid_from_account_id before posting
         _sync_salary(payment)
         db.session.commit()
-        msg = (f"{payment.payment_type} of {payment.amount} recorded for "
-               f"{staff.employee_name} — deducted from {payment.petrol_pump.name}'s cash.")
+        if payment.payment_type == SALARY_FINE_TYPE:
+            msg = (f"Fine of {payment.amount} recorded for {staff.employee_name} "
+                   f"— deducted from their salary due.")
+        else:
+            msg = (f"{payment.payment_type} of {payment.amount} recorded for "
+                   f"{staff.employee_name} — deducted from {payment.petrol_pump.name}'s cash.")
         flash(msg, "success")
         return redirect(url_for("petrol_pumps.salary_payments_view", payment_id=payment.id))
 
     form = {
         "staff_id": None, "payment_date": date.today().isoformat(),
-        "payment_type": "Salary", "amount": "", "for_month": "",
+        "payment_type": SALARY_COMPONENT_LABELS[0], "amount": "", "for_month": "",
         "paid_from_account_id": None, "notes": "", "is_active": True,
     }
     return render_template(

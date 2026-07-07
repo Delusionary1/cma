@@ -414,9 +414,17 @@ def sync_pump_purchase(purchase):
 
 
 def sync_salary_payment(payment):
-    """Staff salary/advance: Dr Pump Expenses / Cr Cash-Bank (when account set)."""
+    """Staff salary/advance: Dr Pump Expenses / Cr Cash-Bank (when account set).
+
+    A Fine is a deduction withheld from the employee (no cash paid out), so it
+    never posts a cash expense.
+    """
+    from app.petrol_pumps.models import SALARY_FINE_TYPE
     amount = payment.amount or _ZERO
-    should = bool(payment.is_active and payment.paid_from_account_id and amount > 0)
+    should = bool(
+        payment.is_active and payment.paid_from_account_id and amount > 0
+        and payment.payment_type != SALARY_FINE_TYPE
+    )
     lines = []
     if should:
         lines = [

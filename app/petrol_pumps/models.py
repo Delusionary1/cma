@@ -633,6 +633,17 @@ STAFF_DESIGNATIONS = [
 ]
 STAFF_SHIFTS = ["Morning", "Evening", "Night", "Full Day"]
 
+# Monthly salary breakdown (BRD §6.9). The stored `monthly_salary` is the sum of
+# these components; each is a non-negative amount. (column name, display label)
+SALARY_COMPONENTS = [
+    ("basic_salary", "Basic Salary"),
+    ("food_allowance", "Food Allowance"),
+    ("special_allowance", "Special Allowance"),
+    ("medical_allowance", "Medical Allowance"),
+    ("mobile_allowance", "Mobile Allowance"),
+    ("other_allowance", "Other Allowance"),
+]
+
 
 class PumpStaff(db.Model):
     """An employee working at a petrol pump (BRD §6.9 Pump Labour / HR).
@@ -657,6 +668,13 @@ class PumpStaff(db.Model):
     phone_number = db.Column(db.String(30), nullable=True)
     emergency_contact = db.Column(db.String(30), nullable=True)
     address = db.Column(db.String(300), nullable=True)
+    # Salary breakdown; monthly_salary is kept as the sum of the six components.
+    basic_salary = db.Column(db.Numeric(14, 2), nullable=False, default=0)
+    food_allowance = db.Column(db.Numeric(14, 2), nullable=False, default=0)
+    special_allowance = db.Column(db.Numeric(14, 2), nullable=False, default=0)
+    medical_allowance = db.Column(db.Numeric(14, 2), nullable=False, default=0)
+    mobile_allowance = db.Column(db.Numeric(14, 2), nullable=False, default=0)
+    other_allowance = db.Column(db.Numeric(14, 2), nullable=False, default=0)
     monthly_salary = db.Column(db.Numeric(14, 2), nullable=False, default=0)
     joining_date = db.Column(db.Date, nullable=True)
     notes = db.Column(db.String(300), nullable=True)
@@ -681,7 +699,18 @@ class PumpStaff(db.Model):
 
 # Daily attendance status options and salary payment types (BRD §6.9).
 ATTENDANCE_STATUSES = ["Present", "Absent", "Leave", "Half Day"]
-SALARY_PAYMENT_TYPES = ["Salary", "Advance"]
+
+# Salary payment types. The six salary components can each be paid separately,
+# plus an Advance, plus a Fine. A Fine is a DEDUCTION withheld from the
+# employee's salary (it reduces what the pump still owes them and moves no cash);
+# every other type is money actually paid out of the pump's cash.
+SALARY_FINE_TYPE = "Fine"
+# Labels of the "money paid to the employee" types (the six salary components).
+SALARY_COMPONENT_LABELS = [label for _, label in SALARY_COMPONENTS]
+SALARY_PAYMENT_TYPES = SALARY_COMPONENT_LABELS + ["Advance", SALARY_FINE_TYPE]
+# Types counted as "salary paid" in the report: the six components plus the
+# legacy single "Salary" type used before the salary breakdown existed.
+SALARY_PAID_TYPES = SALARY_COMPONENT_LABELS + ["Salary"]
 
 
 class PumpAttendance(db.Model):

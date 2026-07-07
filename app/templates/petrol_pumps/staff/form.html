@@ -53,10 +53,28 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-4">
-                <label class="form-label" for="monthly_salary">Monthly Salary (PKR)</label>
-                <input type="number" step="0.01" min="0" class="form-control" id="monthly_salary"
-                       name="monthly_salary" value="{{ form.monthly_salary }}">
+            <div class="col-12">
+                <div class="card bg-body-tertiary border-0">
+                    <div class="card-body">
+                        <h2 class="h6 mb-3">Salary Breakdown (PKR)</h2>
+                        <div class="row g-3">
+                            {% for field, label in salary_components %}
+                            <div class="col-md-4">
+                                <label class="form-label" for="{{ field }}">{{ label }}</label>
+                                <input type="number" step="0.01" min="0"
+                                       class="form-control salary-part" id="{{ field }}"
+                                       name="{{ field }}" value="{{ form[field] }}">
+                            </div>
+                            {% endfor %}
+                            <div class="col-md-4">
+                                <label class="form-label" for="monthly_salary_total">Monthly Salary (Total)</label>
+                                <input type="text" readonly class="form-control fw-bold"
+                                       id="monthly_salary_total" value="0.00">
+                                <div class="form-text">Basic + all allowances.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="col-md-4">
                 <label class="form-label" for="cnic">CNIC</label>
@@ -95,4 +113,21 @@
         <a href="{{ url_for('petrol_pumps.staff_list') }}" class="btn btn-outline-secondary">Cancel</a>
     </div>
 </form>
+
+<script>
+(function () {
+    var parts = document.querySelectorAll('.salary-part');
+    var total = document.getElementById('monthly_salary_total');
+    function recompute() {
+        var sum = 0;
+        parts.forEach(function (el) {
+            var v = parseFloat(el.value);
+            if (!isNaN(v)) sum += v;
+        });
+        total.value = sum.toFixed(2);
+    }
+    parts.forEach(function (el) { el.addEventListener('input', recompute); });
+    recompute();
+})();
+</script>
 {% endblock %}

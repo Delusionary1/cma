@@ -1,12 +1,14 @@
 {# Locked pump indicator — pump selection lives ONLY on the Petrol Pumps
    dashboard, so inner pages show the chosen pump as fixed (read-only) and
    carry it forward via a hidden field. `pump` may be None. #}
-{% macro pump_lock(pump, field_name='petrol_pump_id') %}
+{% macro pump_lock(pump, field_name='petrol_pump_id', show_change=True) %}
 <input type="hidden" name="{{ field_name }}" value="{{ pump.id if pump else '' }}">
 <div class="form-control bg-body-secondary d-flex align-items-center justify-content-between">
     <span class="text-truncate"><span class="text-muted small">Pump:</span>
         <strong>{{ pump.name if pump else 'All pumps' }}</strong></span>
+    {% if show_change %}
     <a href="{{ url_for('petrol_pumps.index', pump=pump.id if pump else None) }}"
        class="small text-decoration-none ms-2 text-nowrap">Change&nbsp;&rsaquo;</a>
+    {% endif %}
 </div>
 {% endmacro %}

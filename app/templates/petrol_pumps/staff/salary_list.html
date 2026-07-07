@@ -57,8 +57,9 @@
                 <td>{{ p.payment_date.strftime("%Y-%m-%d") }}</td>
                 <td>{{ p.staff.employee_name }}</td>
                 <td>
-                    {% if p.payment_type == 'Advance' %}<span class="badge bg-warning text-dark">Advance</span>
-                    {% else %}<span class="badge bg-info">Salary</span>{% endif %}
+                    {% if p.payment_type == 'Fine' %}<span class="badge bg-danger">Fine</span>
+                    {% elif p.payment_type == 'Advance' %}<span class="badge bg-warning text-dark">Advance</span>
+                    {% else %}<span class="badge bg-info">{{ p.payment_type }}</span>{% endif %}
                 </td>
                 <td>{{ p.for_month or "—" }}</td>
                 <td class="text-end fw-semibold">{{ "%.2f"|format(p.amount) }}</td>

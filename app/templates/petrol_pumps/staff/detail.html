@@ -42,7 +42,13 @@
         <tr><th>Duty Station</th><td>{{ staff.petrol_pump.name }}</td></tr>
         <tr><th>Designation</th><td><span class="badge bg-primary">{{ staff.designation }}</span></td></tr>
         <tr><th>Shift</th><td>{{ staff.shift or "—" }}</td></tr>
-        <tr><th>Monthly Salary</th><td>{{ "%.2f"|format(staff.monthly_salary) }} PKR</td></tr>
+        <tr><th>Basic Salary</th><td>{{ "%.2f"|format(staff.basic_salary) }} PKR</td></tr>
+        <tr><th>Food Allowance</th><td>{{ "%.2f"|format(staff.food_allowance) }} PKR</td></tr>
+        <tr><th>Special Allowance</th><td>{{ "%.2f"|format(staff.special_allowance) }} PKR</td></tr>
+        <tr><th>Medical Allowance</th><td>{{ "%.2f"|format(staff.medical_allowance) }} PKR</td></tr>
+        <tr><th>Mobile Allowance</th><td>{{ "%.2f"|format(staff.mobile_allowance) }} PKR</td></tr>
+        <tr><th>Other Allowance</th><td>{{ "%.2f"|format(staff.other_allowance) }} PKR</td></tr>
+        <tr class="table-active"><th>Monthly Salary (Total)</th><td><strong>{{ "%.2f"|format(staff.monthly_salary) }} PKR</strong></td></tr>
         <tr><th>CNIC</th><td>{{ staff.cnic or "—" }}</td></tr>
         <tr><th>Phone</th><td>{{ staff.phone_number or "—" }}</td></tr>
         <tr><th>Emergency Contact</th><td>{{ staff.emergency_contact or "—" }}</td></tr>

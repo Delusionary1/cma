@@ -22,7 +22,7 @@
         <a href="{{ url_for('petrol_pumps.salary_payments_list') }}" class="btn btn-outline-secondary btn-sm">Payments</a>
     </div>
 </div>
-<p class="text-muted">For each worker: monthly salary due, salary already paid, advance taken, and what's still left to pay (<strong>Remaining = Monthly Salary − Salary Paid − Advance</strong>).</p>
+<p class="text-muted">For each worker: monthly salary due, salary already paid, advance taken, fine deducted, and what's still left to pay (<strong>Remaining = Monthly Salary − Salary Paid − Advance − Fine</strong>).</p>
 
 <form method="get" class="row g-2 mb-3 align-items-end">
     <div class="col-md-2">
@@ -48,6 +48,7 @@
                 <th class="text-end">Monthly Salary</th>
                 <th class="text-end">Salary Paid</th>
                 <th class="text-end">Advance Taken</th>
+                <th class="text-end">Fine</th>
                 <th class="text-end">Total Paid</th>
                 <th class="text-end">Remaining to Pay</th>
             </tr>
@@ -60,6 +61,7 @@
                 <td class="text-end">{{ "%.2f"|format(r.due) }}</td>
                 <td class="text-end">{{ "%.2f"|format(r.salary_paid) }}</td>
                 <td class="text-end">{{ "%.2f"|format(r.advance) }}</td>
+                <td class="text-end {{ 'text-danger' if r.fine > 0 else '' }}">{{ "%.2f"|format(r.fine) }}</td>
                 <td class="text-end">{{ "%.2f"|format(r.paid_total) }}</td>
                 <td class="text-end fw-bold {{ 'text-danger' if r.remaining > 0 else ('text-success' if r.remaining < 0 else '') }}">{{ "%.2f"|format(r.remaining) }}</td>
             </tr>
@@ -71,6 +73,7 @@
                 <td class="text-end">{{ "%.2f"|format(totals.due) }}</td>
                 <td class="text-end">{{ "%.2f"|format(totals.salary_paid) }}</td>
                 <td class="text-end">{{ "%.2f"|format(totals.advance) }}</td>
+                <td class="text-end">{{ "%.2f"|format(totals.fine) }}</td>
                 <td class="text-end">{{ "%.2f"|format(totals.paid_total) }}</td>
                 <td class="text-end">{{ "%.2f"|format(totals.remaining) }}</td>
             </tr>

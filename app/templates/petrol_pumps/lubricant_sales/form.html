@@ -40,7 +40,7 @@
     <div class="row">
         <div class="col-md-6 mb-3">
             <label for="petrol_pump_id" class="form-label">Petrol Pump <span class="text-danger">*</span></label>
-            {% if sel_pump %}{{ pump_lock(sel_pump) }}{% else %}
+            {% if sel_pump %}{{ pump_lock(sel_pump, show_change=False) }}{% else %}
             <select class="form-select" id="petrol_pump_id" name="petrol_pump_id" required>
                 <option value="" disabled {{ "selected" if not form.petrol_pump_id else "" }}>-- Select a pump --</option>
                 {% for pump in pumps %}<option value="{{ pump.id }}" {{ "selected" if form.petrol_pump_id == pump.id else "" }}>{{ pump.name }}</option>{% endfor %}

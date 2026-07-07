@@ -14,6 +14,7 @@ from app.petrol_pumps.models import (
     PumpDailyClosing,
     PumpExpense,
     PumpSalaryPayment,
+    SALARY_FINE_TYPE,
 )
 
 _ZERO = Decimal("0")
@@ -78,11 +79,13 @@ def pump_current_cash(pump_id):
         PumpExpense.is_active.is_(True),
     )
     # Staff salaries/advances are paid out of the pump's cash, exactly like a
-    # pump expense, so they reduce the pump's cash too.
+    # pump expense, so they reduce the pump's cash too. A Fine is a deduction
+    # (money withheld, not paid), so it never leaves the pump's cash.
     salary = _sum_col(
         PumpSalaryPayment.amount,
         PumpSalaryPayment.petrol_pump_id == pump_id,
         PumpSalaryPayment.is_active.is_(True),
+        PumpSalaryPayment.payment_type != SALARY_FINE_TYPE,
     )
     received = _sum_col(
         HeadOfficeCashReceipt.amount,
@@ -184,6 +187,7 @@ def calculate_daily_expenses(pump_id, closing_date):
         PumpSalaryPayment.petrol_pump_id == pump_id,
         PumpSalaryPayment.payment_date == closing_date,
         PumpSalaryPayment.is_active.is_(True),
+        PumpSalaryPayment.payment_type != SALARY_FINE_TYPE,
     )
     return expenses + salaries
 
