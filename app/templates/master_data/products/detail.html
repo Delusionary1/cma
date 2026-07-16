@@ -26,6 +26,12 @@
             <button type="submit" class="btn btn-outline-success">Activate</button>
             {% endif %}
         </form>
+        <form method="post"
+              action="{{ url_for('master_data.products_delete', product_id=product.id) }}"
+              class="d-inline"
+              onsubmit="return confirm('Permanently delete product \'{{ product.name|e }}\'? This cannot be undone. (If anything is filed under it, deactivate instead.)');">
+            <button type="submit" class="btn btn-outline-danger">Delete</button>
+        </form>
     </div>
 </div>
 

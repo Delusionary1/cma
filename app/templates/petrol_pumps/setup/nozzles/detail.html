@@ -16,13 +16,15 @@
     <h1 class="h3 mb-0">{{ nozzle.nozzle_number }}</h1>
     <div>
         <a href="{{ url_for('petrol_pumps.nozzles_edit', nozzle_id=nozzle.id) }}" class="btn btn-outline-secondary">Edit</a>
-        <form method="post" action="{{ url_for('petrol_pumps.nozzles_toggle_status', nozzle_id=nozzle.id) }}" class="d-inline">
-            {% if nozzle.is_active %}
-            <button type="submit" class="btn btn-outline-warning">Deactivate</button>
-            {% else %}
-            <button type="submit" class="btn btn-outline-success">Activate</button>
-            {% endif %}
+        {% if nozzle.is_active %}
+        <form method="post" action="{{ url_for('petrol_pumps.nozzles_delete', nozzle_id=nozzle.id) }}" class="d-inline" onsubmit="return confirm('Permanently delete this nozzle? This cannot be undone.');">
+            <button type="submit" class="btn btn-outline-danger">Delete</button>
         </form>
+        {% else %}
+        <form method="post" action="{{ url_for('petrol_pumps.nozzles_toggle_status', nozzle_id=nozzle.id) }}" class="d-inline">
+            <button type="submit" class="btn btn-outline-success">Activate</button>
+        </form>
+        {% endif %}
     </div>
 </div>
 

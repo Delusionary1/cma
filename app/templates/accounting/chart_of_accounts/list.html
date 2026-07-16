@@ -65,15 +65,19 @@
                        class="btn btn-sm btn-outline-primary">View</a>
                     <a href="{{ url_for('accounting.chart_of_accounts_edit', account_id=account.id) }}"
                        class="btn btn-sm btn-outline-secondary">Edit</a>
+                    {% if account.is_active %}
+                    <form method="post"
+                          action="{{ url_for('accounting.chart_of_accounts_delete', account_id=account.id) }}"
+                          class="d-inline" onsubmit="return confirm('Permanently delete this account? This cannot be undone.');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                    {% else %}
                     <form method="post"
                           action="{{ url_for('accounting.chart_of_accounts_toggle_status', account_id=account.id) }}"
                           class="d-inline">
-                        {% if account.is_active %}
-                        <button type="submit" class="btn btn-sm btn-outline-warning">Deactivate</button>
-                        {% else %}
                         <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
-                        {% endif %}
                     </form>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}

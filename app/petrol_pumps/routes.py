@@ -783,6 +783,25 @@ def nozzles_toggle_status(nozzle_id):
     return redirect(url_for("petrol_pumps.nozzles_list"))
 
 
+@petrol_pumps_bp.route("/setup/nozzles/<int:nozzle_id>/delete", methods=["POST"])
+@role_required(*PUMP_SETUP_ROLES)
+def nozzles_delete(nozzle_id):
+    """Permanently remove a nozzle — blocked if it has any machine reading history."""
+    nozzle = db.get_or_404(PumpNozzle, nozzle_id)
+    if MachineReading.query.filter_by(nozzle_id=nozzle.id).first():
+        flash(
+            f"Cannot delete nozzle '{nozzle.nozzle_number}': it is used by machine "
+            "readings. Deactivate it instead to keep history intact.",
+            "danger",
+        )
+        return redirect(url_for("petrol_pumps.nozzles_view", nozzle_id=nozzle.id))
+    name = nozzle.nozzle_number
+    db.session.delete(nozzle)
+    db.session.commit()
+    flash(f"Nozzle '{name}' permanently deleted.", "success")
+    return redirect(url_for("petrol_pumps.nozzles_list"))
+
+
 # --------------------------------------------------------------------------- #
 # Tanks
 # --------------------------------------------------------------------------- #
@@ -1368,15 +1387,28 @@ def machine_readings_console():
         rows = (
             PumpNozzle.query.filter_by(petrol_pump_id=pump.id, is_active=True).all()
         )
-        rows.sort(key=lambda n: (
-            _PRODUCT_ORDER.get(_product_letter(n.product), 9),
-            (n.product.name or "") if n.product else "", n.id,
-        ))
-        counters = {}
+
+        def _row_tank(n):
+            # Same resolution the actual posting uses, so the label always
+            # matches the tank that will really be decremented.
+            return stock.tank_for_nozzle(n)
+
+        def _nozzle_sort_key(n):
+            try:
+                num = (int(n.nozzle_number), "")
+            except (TypeError, ValueError):
+                num = (10**9, n.nozzle_number or "")
+            tank = _row_tank(n)
+            return (
+                _PRODUCT_ORDER.get(_product_letter(n.product), 9),
+                tank.tank_name if tank else "",
+                num,
+            )
+
+        rows.sort(key=_nozzle_sort_key)
         seen = set()
         for n in rows:
-            letter = _product_letter(n.product)
-            counters[letter] = counters.get(letter, 0) + 1
+            tank = _row_tank(n)
             saved = saved_by_nozzle.get(n.id)
             if this_done and saved is not None:
                 # Locked display of the saved entry, exactly as recorded.
@@ -1389,7 +1421,11 @@ def machine_readings_console():
                 closing = None
             nozzles.append({
                 "n": n,
-                "label": f"{letter}{counters[letter]}",
+                # Show the real nozzle number + its actual tank — never a
+                # synthetic counter, so it's always clear which physical tank
+                # (e.g. P1 vs P2) a row draws from.
+                "label": f"Nozzle {n.nozzle_number}",
+                "tank_name": tank.tank_name if tank else "—",
                 "opening": opening,
                 "closing": closing,
                 "locked": this_done and saved is not None,
@@ -1682,6 +1718,20 @@ def machine_readings_toggle_status(reading_id):
     return redirect(url_for("petrol_pumps.machine_readings_list"))
 
 
+@petrol_pumps_bp.route("/machine-readings/<int:reading_id>/delete", methods=["POST"])
+@role_required(*READING_ROLES)
+def machine_readings_delete(reading_id):
+    """Delete a machine reading — reverses any posted stock first, same as
+    deactivating, then permanently removes the row."""
+    reading = db.get_or_404(MachineReading, reading_id)
+    reading.is_active = False
+    stock.sync_reading_stock(reading)  # reverse the posted tank decrement
+    db.session.delete(reading)
+    db.session.commit()
+    flash("Machine reading deleted — its stock effect has been reversed.", "success")
+    return redirect(url_for("petrol_pumps.machine_readings_list"))
+
+
 # --------------------------------------------------------------------------- #
 # Daily Sale Summary (from machine readings only)
 # --------------------------------------------------------------------------- #
@@ -1882,6 +1932,11 @@ def tank_stock():
     f_pump = pump.id if pump else None
     tanks = stock.tank_stock_rows(petrol_pump_id=f_pump)
     total = sum((t.current_stock_liters or Decimal("0")) for t in tanks)
+    # Sale rate (retail price) — same rate the Reading Console prefills.
+    sale_rates = {t.id: _product_rate_prefill(t.petrol_pump_id, t.product) for t in tanks if t.product}
+    # Purchase rate (cost basis) — same rate the Purchases Console prefills,
+    # per tank so each pump's own last-paid rate is reflected.
+    purchase_rates = {t.id: _tank_last_rate(t) for t in tanks}
 
     export = _export_format()
     if export:
@@ -1892,10 +1947,15 @@ def tank_stock():
             fmt(t.opening_stock_liters),
             fmt(t.current_stock_liters),
             fmt(t.capacity_liters) if t.capacity_liters is not None else "",
+            fmt(purchase_rates.get(t.id)) if purchase_rates.get(t.id) else "",
+            fmt(sale_rates.get(t.id)) if sale_rates.get(t.id) else "",
         ] for t in tanks]
-        rows.append(["Total", "", "", "", fmt(total), ""])
+        rows.append(["Total", "", "", "", fmt(total), "", "", ""])
         blocks = [{
-            "headers": ["Pump", "Tank", "Product", "Opening", "Current", "Capacity"],
+            "headers": [
+                "Pump", "Tank", "Product", "Opening", "Current", "Capacity",
+                "Purchase Rate", "Sale Rate",
+            ],
             "rows": rows,
         }]
         return export_response(export, "tank_stock", "Tank Stock", blocks)
@@ -1903,6 +1963,7 @@ def tank_stock():
     return render_template(
         "petrol_pumps/tank_stock.html",
         tanks=tanks, total=total, pump=pump,
+        purchase_rates=purchase_rates, sale_rates=sale_rates,
         filters={"petrol_pump_id": f_pump}, pumps=pumps,
     )
 
@@ -4087,6 +4148,31 @@ def purchases_toggle_status(purchase_id):
     return redirect(url_for("petrol_pumps.purchases_list"))
 
 
+@petrol_pumps_bp.route("/purchases/<int:purchase_id>/delete", methods=["POST"])
+@role_required(*PURCHASE_ROLES)
+def purchases_delete(purchase_id):
+    """Delete a purchase — reverses any posted stock/GL first (same as
+    deactivating), then permanently removes the row and its line items."""
+    purchase = db.get_or_404(PumpPurchase, purchase_id)
+
+    if purchase.stock_posted:
+        ok, tank = _can_unpost(purchase)
+        if not ok:
+            flash(
+                f"Cannot delete: tank '{tank.tank_name}' would go negative. "
+                "Deactivate it instead.",
+                "danger",
+            )
+            return redirect(url_for("petrol_pumps.purchases_list"))
+
+    purchase.is_active = False
+    _sync_stock(purchase)  # reverses stock + clears the GL posting
+    db.session.delete(purchase)
+    db.session.commit()
+    flash("Purchase deleted — its stock/accounting effect has been reversed.", "success")
+    return redirect(url_for("petrol_pumps.purchases_list"))
+
+
 # --------------------------------------------------------------------------- #
 # Pump Expenses
 # --------------------------------------------------------------------------- #
@@ -4306,6 +4392,21 @@ def expenses_toggle_status(expense_id):
     db.session.commit()
     state = "activated" if expense.is_active else "deactivated"
     flash(f"Expense {state}.", "info")
+    return redirect(url_for("petrol_pumps.expenses_list"))
+
+
+@petrol_pumps_bp.route("/expenses/<int:expense_id>/delete", methods=["POST"])
+@role_required(*READING_ROLES)
+def expenses_delete(expense_id):
+    """Delete a pump expense. Expenses are never posted to the GL or an account
+    balance directly — every total that uses them (daily closing summary, cash
+    reports) sums only is_active rows — so there is nothing to reverse; a hard
+    delete has the same effect as deactivating it. No other table references a
+    pump expense, so there is no usage guard either."""
+    expense = db.get_or_404(PumpExpense, expense_id)
+    db.session.delete(expense)
+    db.session.commit()
+    flash("Expense deleted.", "success")
     return redirect(url_for("petrol_pumps.expenses_list"))
 
 
@@ -4596,6 +4697,22 @@ def lubricant_sales_toggle_status(sale_id):
     db.session.commit()
     state = "activated" if sale.is_active else "deactivated"
     flash(f"Lubricant sale {state}.", "info")
+    return redirect(url_for("petrol_pumps.lubricant_sales_list"))
+
+
+@petrol_pumps_bp.route("/lubricant-sales/<int:sale_id>/delete", methods=["POST"])
+@role_required(*READING_ROLES)
+def lubricant_sales_delete(sale_id):
+    """Delete a lubricant sale. Lubricant sales never post to the GL or a stock
+    table directly — available lubricant stock (_lubricant_stock) and every
+    report total are derived by summing is_active rows on demand — so there is
+    nothing to reverse; a hard delete has the same effect as deactivating it.
+    No other table references a lubricant sale, so there is no usage guard
+    either (its customer-ledger entry, if any, is likewise just a live sum)."""
+    sale = db.get_or_404(LubricantSale, sale_id)
+    db.session.delete(sale)
+    db.session.commit()
+    flash("Lubricant sale deleted.", "success")
     return redirect(url_for("petrol_pumps.lubricant_sales_list"))
 
 
@@ -5089,6 +5206,44 @@ def daily_closings_toggle_status(closing_id):
     db.session.commit()
     state = "activated" if closing.is_active else "deactivated"
     flash(f"Daily closing {state}.", "info")
+    return redirect(url_for("petrol_pumps.daily_closings_list"))
+
+
+@petrol_pumps_bp.route("/daily-closings/<int:closing_id>/delete", methods=["POST"])
+@role_required(*READING_ROLES)
+def daily_closings_delete(closing_id):
+    """Delete a daily closing — reverses all of its posted effects first (same
+    as deactivating), then permanently removes the row.
+
+    Blocked if another module already has a real record hanging off this
+    closing: a head-office cash receipt (its own account posting/history) or a
+    PSO card payment (its own verify workflow) — both keep a foreign key to
+    this closing, so deleting out from under them would either orphan them or
+    violate the FK. Deactivate is the safe path for those.
+    """
+    from app.head_office.models import HeadOfficeCashReceipt
+
+    closing = db.get_or_404(PumpDailyClosing, closing_id)
+    blockers = []
+    if HeadOfficeCashReceipt.query.filter_by(daily_closing_id=closing.id).first():
+        blockers.append("a head office cash receipt")
+    if PsoCardPayment.query.filter_by(daily_closing_id=closing.id).first():
+        blockers.append("a PSO card payment")
+    if blockers:
+        flash(
+            f"Cannot delete this closing: it is linked to {', and '.join(blockers)}. "
+            "Deactivate it instead to keep history intact.",
+            "danger",
+        )
+        return redirect(url_for("petrol_pumps.daily_closings_view", closing_id=closing.id))
+
+    closing.is_active = False
+    posting.sync_daily_closing(closing)  # reverses revenue + COGS GL entries
+    _sync_closing_bank(closing)          # reverses the non-cash account credits
+    _sync_closing_pso_card(closing)      # deactivates any PSO card row (none left by guard)
+    db.session.delete(closing)
+    db.session.commit()
+    flash("Daily closing deleted — its accounting and cash effects have been reversed.", "success")
     return redirect(url_for("petrol_pumps.daily_closings_list"))
 
 

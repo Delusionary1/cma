@@ -70,17 +70,16 @@
                 <td class="text-end text-nowrap">
                     <a href="{{ url_for('petrol_pumps.salary_payments_view', payment_id=p.id) }}" class="btn btn-sm btn-outline-primary">View</a>
                     <a href="{{ url_for('petrol_pumps.salary_payments_edit', payment_id=p.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                    <form method="post" action="{{ url_for('petrol_pumps.salary_payments_toggle_status', payment_id=p.id) }}" class="d-inline">
-                        {% if p.is_active %}
-                        <button type="submit" class="btn btn-sm btn-outline-warning">Cancel</button>
-                        {% else %}
-                        <button type="submit" class="btn btn-sm btn-outline-success">Reactivate</button>
-                        {% endif %}
-                    </form>
+                    {% if p.is_active %}
                     <form method="post" action="{{ url_for('petrol_pumps.salary_payments_delete', payment_id=p.id) }}" class="d-inline"
                           onsubmit="return confirm('Permanently delete this payment? Any balance effect is reversed.');">
                         <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                     </form>
+                    {% else %}
+                    <form method="post" action="{{ url_for('petrol_pumps.salary_payments_toggle_status', payment_id=p.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-success">Reactivate</button>
+                    </form>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}

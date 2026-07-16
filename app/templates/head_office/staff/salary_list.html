@@ -43,12 +43,15 @@
                 <td>{% if p.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Cancelled</span>{% endif %}</td>
                 <td class="text-end text-nowrap">
                     <a href="{{ url_for('head_office.ho_salary_edit', payment_id=p.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                    <form method="post" action="{{ url_for('head_office.ho_salary_toggle_status', payment_id=p.id) }}" class="d-inline">
-                        {% if p.is_active %}<button class="btn btn-sm btn-outline-warning">Cancel</button>{% else %}<button class="btn btn-sm btn-outline-success">Reactivate</button>{% endif %}
-                    </form>
-                    <form method="post" action="{{ url_for('head_office.ho_salary_delete', payment_id=p.id) }}" class="d-inline" onsubmit="return confirm('Delete this payment? Any balance effect is reversed.');">
+                    {% if p.is_active %}
+                    <form method="post" action="{{ url_for('head_office.ho_salary_delete', payment_id=p.id) }}" class="d-inline" onsubmit="return confirm('Permanently delete this payment? This cannot be undone.');">
                         <button class="btn btn-sm btn-outline-danger">Delete</button>
                     </form>
+                    {% else %}
+                    <form method="post" action="{{ url_for('head_office.ho_salary_toggle_status', payment_id=p.id) }}" class="d-inline">
+                        <button class="btn btn-sm btn-outline-success">Reactivate</button>
+                    </form>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}

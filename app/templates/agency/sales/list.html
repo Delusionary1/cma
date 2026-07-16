@@ -62,9 +62,15 @@
                 <td class="text-end text-nowrap">
                     <a href="{{ url_for('agency.sales_view', sale_id=s.id) }}" class="btn btn-sm btn-outline-primary">View</a>
                     <a href="{{ url_for('agency.sales_edit', sale_id=s.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                    <form method="post" action="{{ url_for('agency.sales_toggle_status', sale_id=s.id) }}" class="d-inline">
-                        {% if s.is_active %}<button class="btn btn-sm btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-sm btn-outline-success">Activate</button>{% endif %}
+                    {% if s.is_active %}
+                    <form method="post" action="{{ url_for('agency.sales_delete', sale_id=s.id) }}" class="d-inline" onsubmit="return confirm('Permanently delete this agency sale? This cannot be undone.');">
+                        <button class="btn btn-sm btn-outline-danger">Delete</button>
                     </form>
+                    {% else %}
+                    <form method="post" action="{{ url_for('agency.sales_toggle_status', sale_id=s.id) }}" class="d-inline">
+                        <button class="btn btn-sm btn-outline-success">Activate</button>
+                    </form>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}

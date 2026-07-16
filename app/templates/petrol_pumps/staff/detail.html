@@ -16,17 +16,16 @@
     <h1 class="h3 mb-0">{{ staff.employee_name }}</h1>
     <div>
         <a href="{{ url_for('petrol_pumps.staff_edit', staff_id=staff.id) }}" class="btn btn-outline-secondary">Edit</a>
-        <form method="post" action="{{ url_for('petrol_pumps.staff_toggle_status', staff_id=staff.id) }}" class="d-inline">
-            {% if staff.is_active %}
-            <button type="submit" class="btn btn-outline-warning">Deactivate</button>
-            {% else %}
-            <button type="submit" class="btn btn-outline-success">Activate</button>
-            {% endif %}
-        </form>
+        {% if staff.is_active %}
         <form method="post" action="{{ url_for('petrol_pumps.staff_delete', staff_id=staff.id) }}" class="d-inline"
               onsubmit="return confirm('Permanently delete employee \'{{ staff.employee_name|e }}\'? This cannot be undone.');">
             <button type="submit" class="btn btn-outline-danger">Delete</button>
         </form>
+        {% else %}
+        <form method="post" action="{{ url_for('petrol_pumps.staff_toggle_status', staff_id=staff.id) }}" class="d-inline">
+            <button type="submit" class="btn btn-outline-success">Activate</button>
+        </form>
+        {% endif %}
     </div>
 </div>
 

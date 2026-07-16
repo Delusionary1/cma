@@ -16,9 +16,15 @@
     <h1 class="h3 mb-0">Agency Sale #{{ sale.id }}</h1>
     <div>
         <a href="{{ url_for('agency.sales_edit', sale_id=sale.id) }}" class="btn btn-outline-secondary">Edit</a>
-        <form method="post" action="{{ url_for('agency.sales_toggle_status', sale_id=sale.id) }}" class="d-inline">
-            {% if sale.is_active %}<button class="btn btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-outline-success">Activate</button>{% endif %}
+        {% if sale.is_active %}
+        <form method="post" action="{{ url_for('agency.sales_delete', sale_id=sale.id) }}" class="d-inline" onsubmit="return confirm('Permanently delete this agency sale? This cannot be undone.');">
+            <button class="btn btn-outline-danger">Delete</button>
         </form>
+        {% else %}
+        <form method="post" action="{{ url_for('agency.sales_toggle_status', sale_id=sale.id) }}" class="d-inline">
+            <button class="btn btn-outline-success">Activate</button>
+        </form>
+        {% endif %}
     </div>
 </div>
 

@@ -26,6 +26,7 @@ from app.accounting.models import (
     ChartOfAccount,
     CustomerReceipt,
     JournalEntry,
+    JournalEntryLine,
     RECEIPT_PAYMENT_METHODS,
     Voucher,
 )
@@ -287,6 +288,41 @@ def chart_of_accounts_toggle_status(account_id):
     db.session.commit()
     state = "activated" if account.is_active else "deactivated"
     flash(f"Account '{account.code}' {state}.", "info")
+    return redirect(url_for("accounting.chart_of_accounts_list"))
+
+
+@accounting_bp.route(
+    "/chart-of-accounts/<int:account_id>/delete", methods=["POST"]
+)
+@role_required(*ACC_ROLES)
+def chart_of_accounts_delete(account_id):
+    """Permanently remove a chart account — only if nothing depends on it.
+
+    Structural data, not a transaction: never posts/reverses anything. Hard
+    delete is blocked when journal history references it or when it has child
+    accounts; Deactivate is the safe route in those cases.
+    """
+    account = db.get_or_404(ChartOfAccount, account_id)
+    journal_lines = JournalEntryLine.query.filter_by(chart_of_account_id=account.id).count()
+    child_accounts = ChartOfAccount.query.filter_by(parent_id=account.id).count()
+    blocking = {}
+    if journal_lines:
+        blocking["journal entry lines"] = journal_lines
+    if child_accounts:
+        blocking["child accounts"] = child_accounts
+    if blocking:
+        detail = ", ".join(f"{n} {area}" for area, n in blocking.items())
+        flash(
+            f"Cannot delete '{account.code}': it is used by {detail}. "
+            "Deactivate it instead to keep history intact.",
+            "danger",
+        )
+        return redirect(url_for("accounting.chart_of_accounts_view", account_id=account_id))
+
+    code = account.code
+    db.session.delete(account)
+    db.session.commit()
+    flash(f"Account '{code}' permanently deleted.", "success")
     return redirect(url_for("accounting.chart_of_accounts_list"))
 
 
@@ -776,4 +812,19 @@ def customer_receipts_toggle_status(receipt_id):
     db.session.commit()
     state = "activated" if receipt.is_active else "deactivated"
     flash(f"Receipt {state}.", "info")
+    return redirect(url_for("accounting.customer_receipts_list"))
+
+
+@accounting_bp.route("/customer-receipts/<int:receipt_id>/delete", methods=["POST"])
+@role_required(*ACC_ROLES)
+def customer_receipts_delete(receipt_id):
+    receipt = db.get_or_404(CustomerReceipt, receipt_id)
+    if receipt.is_posted and not _can_unpost_receipt(receipt):
+        flash(f"Cannot delete: reversing this receipt would make '{receipt.received_into_account.name}' negative.", "danger")
+        return redirect(url_for("accounting.customer_receipts_list"))
+    receipt.is_active = False
+    _sync_receipt(receipt)  # reverse the account balance + clear GL before removing
+    db.session.delete(receipt)
+    db.session.commit()
+    flash("Receipt permanently deleted.", "success")
     return redirect(url_for("accounting.customer_receipts_list"))

@@ -174,14 +174,15 @@
         <div class="rc-tblwrap">
         <table class="rc-tbl">
             <thead>
-                <tr><th>Nozzle</th><th>Product</th><th>Opening</th><th>Closing — after 12h</th><th class="num">Liters</th><th class="num">Amount</th></tr>
+                <tr><th>Tank</th><th>Nozzle</th><th>Product</th><th>Opening</th><th>Closing — after 12h</th><th class="num">Liters</th><th class="num">Amount</th></tr>
             </thead>
             <tbody>
             {% for nz in nozzles %}
             {% set pn = nz.product_name|lower %}
             {% set cc = '#F5A524' if 'petrol' in pn else ('#22B8D4' if 'diesel' in pn else ('#9B7FE8' if 'octane' in pn else '#8C96A8')) %}
             <tr data-row data-product="{{ nz.product_id }}" style="--cc:{{ cc }}">
-                <td class="lbl"><span class="rc-dot"></span>{{ nz.label }}</td>
+                <td class="prod"><span class="rc-dot"></span>{{ nz.tank_name }}</td>
+                <td class="lbl">{{ nz.label }}</td>
                 <td class="prod">{{ nz.product_name }}</td>
                 <td><input type="number" step="0.01" min="0" name="opening_{{ nz.n.id }}" value="{{ nz.opening }}" data-opening {% if nz.locked %}readonly{% endif %} title="Auto-filled from the last saved closing — editable if you need to correct it"></td>
                 <td><input type="number" step="0.01" min="0" name="closing_{{ nz.n.id }}" value="{{ nz.closing if nz.closing is not none else '' }}" placeholder="enter today's meter" data-closing autocomplete="off" {% if nz.locked %}readonly{% endif %}></td>
@@ -195,13 +196,13 @@
                 {% set pn = p.name|lower %}
                 {% set cc = '#F5A524' if 'petrol' in pn else ('#22B8D4' if 'diesel' in pn else ('#9B7FE8' if 'octane' in pn else '#8C96A8')) %}
                 <tr class="rc-subtot">
-                    <td colspan="4" class="num"><span class="rc-dot" style="--cc:{{ cc }}"></span>{{ p.name }} total</td>
+                    <td colspan="5" class="num"><span class="rc-dot" style="--cc:{{ cc }}"></span>{{ p.name }} total</td>
                     <td class="num"><span data-tot-liters="{{ p.id }}">0.00</span></td>
                     <td class="num"><span data-tot-amount="{{ p.id }}">0</span></td>
                 </tr>
                 {% endfor %}
                 <tr>
-                    <td colspan="4" class="num">All products</td>
+                    <td colspan="5" class="num">All products</td>
                     <td class="num"><b id="rcTotL">0.00</b></td>
                     <td class="num"><b>PKR <span id="rcTotA">0</span></b></td>
                 </tr>

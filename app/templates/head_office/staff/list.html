@@ -41,12 +41,15 @@
                 <td class="text-end text-nowrap">
                     <a href="{{ url_for('head_office.staff_view', staff_id=s.id) }}" class="btn btn-sm btn-outline-primary">View</a>
                     <a href="{{ url_for('head_office.staff_edit', staff_id=s.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                    <form method="post" action="{{ url_for('head_office.staff_toggle_status', staff_id=s.id) }}" class="d-inline">
-                        {% if s.is_active %}<button class="btn btn-sm btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-sm btn-outline-success">Activate</button>{% endif %}
-                    </form>
-                    <form method="post" action="{{ url_for('head_office.staff_delete', staff_id=s.id) }}" class="d-inline" onsubmit="return confirm('Permanently delete employee \'{{ s.employee_name|e }}\'?');">
+                    {% if s.is_active %}
+                    <form method="post" action="{{ url_for('head_office.staff_delete', staff_id=s.id) }}" class="d-inline" onsubmit="return confirm('Permanently delete employee \'{{ s.employee_name|e }}\'? This cannot be undone.');">
                         <button class="btn btn-sm btn-outline-danger">Delete</button>
                     </form>
+                    {% else %}
+                    <form method="post" action="{{ url_for('head_office.staff_toggle_status', staff_id=s.id) }}" class="d-inline">
+                        <button class="btn btn-sm btn-outline-success">Activate</button>
+                    </form>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}

@@ -63,21 +63,25 @@ DEFAULT_VEHICLES = [
     ("CUST-001", "Tanker", "Customer Vehicle", None),
 ]
 
-# Default cash/bank/wallet accounts: (name, business unit type, account type).
+# Default cash/bank/wallet accounts: (name, business unit type, account type,
+# pump name or None). Pump-specific accounts are named after the actual pump
+# (never "Pump 1/2/3") and linked via petrol_pump so pump screens only offer
+# their own account.
 DEFAULT_ACCOUNTS = [
-    ("Head Office Cash", BusinessUnitType.HEAD_OFFICE, "Cash"),
-    ("Head Office Bank", BusinessUnitType.HEAD_OFFICE, "Bank"),
-    ("Pump 1 Cash", BusinessUnitType.PETROL_PUMP_RETAIL, "Cash"),
-    ("Pump 2 Cash", BusinessUnitType.PETROL_PUMP_RETAIL, "Cash"),
-    ("Pump 3 Cash", BusinessUnitType.PETROL_PUMP_RETAIL, "Cash"),
-    ("Pump 1 Bank", BusinessUnitType.PETROL_PUMP_RETAIL, "Bank"),
-    ("Pump 2 Bank", BusinessUnitType.PETROL_PUMP_RETAIL, "Bank"),
-    ("Pump 3 Bank", BusinessUnitType.PETROL_PUMP_RETAIL, "Bank"),
-    ("Easypaisa", BusinessUnitType.HEAD_OFFICE, "Wallet"),
-    ("JazzCash", BusinessUnitType.HEAD_OFFICE, "Wallet"),
-    ("PSO Payable", BusinessUnitType.PETROL_PUMP_RETAIL, "PSO Ledger"),
-    ("Agency Cash Account", BusinessUnitType.OIL_AGENCY, "Cash"),
-    ("Carriage Cash Account", BusinessUnitType.CARRIAGE, "Cash"),
+    ("Head Office Cash", BusinessUnitType.HEAD_OFFICE, "Cash", None),
+    ("Head Office Bank", BusinessUnitType.HEAD_OFFICE, "Bank", None),
+] + [
+    (f"{pump_name} Cash", BusinessUnitType.PETROL_PUMP_RETAIL, "Cash", pump_name)
+    for pump_name in PETROL_PUMP_NAMES
+] + [
+    (f"{pump_name} Bank", BusinessUnitType.PETROL_PUMP_RETAIL, "Bank", pump_name)
+    for pump_name in PETROL_PUMP_NAMES
+] + [
+    ("Easypaisa", BusinessUnitType.HEAD_OFFICE, "Wallet", None),
+    ("JazzCash", BusinessUnitType.HEAD_OFFICE, "Wallet", None),
+    ("PSO Payable", BusinessUnitType.PETROL_PUMP_RETAIL, "PSO Ledger", None),
+    ("Agency Cash Account", BusinessUnitType.OIL_AGENCY, "Cash", None),
+    ("Carriage Cash Account", BusinessUnitType.CARRIAGE, "Cash", None),
 ]
 
 # Default expense categories per business unit type.
@@ -244,17 +248,23 @@ def seed_data():
 
     # --- Default Cash/Bank/Wallet Accounts ---
     if CashBankAccount.query.count() == 0:
-        for name, unit_type, account_type in DEFAULT_ACCOUNTS:
+        for name, unit_type, account_type, pump_name in DEFAULT_ACCOUNTS:
             unit = BusinessUnit.query.filter_by(type=unit_type).first()
-            if unit is not None:
-                db.session.add(
-                    CashBankAccount(
-                        name=name,
-                        account_type=account_type,
-                        business_unit=unit,
-                    )
+            if unit is None:
+                continue
+            pump = (
+                PetrolPump.query.filter_by(name=pump_name).first()
+                if pump_name else None
+            )
+            db.session.add(
+                CashBankAccount(
+                    name=name,
+                    account_type=account_type,
+                    business_unit=unit,
+                    petrol_pump=pump,
                 )
-                created["cash_bank_accounts"] += 1
+            )
+            created["cash_bank_accounts"] += 1
         db.session.commit()
 
     # --- Default Expense Categories ---

@@ -35,13 +35,16 @@
                 <td>{% if f.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
                 <td class="text-end text-nowrap">
                     <a href="{{ url_for('petrol_pumps.carriage_feeds_view', feed_id=f.id) }}" class="btn btn-sm btn-outline-primary">View</a>
-                    <form method="post" action="{{ url_for('petrol_pumps.carriage_feeds_toggle_status', feed_id=f.id) }}" class="d-inline">
-                        {% if f.is_active %}<button class="btn btn-sm btn-outline-warning">Deactivate</button>{% else %}<button class="btn btn-sm btn-outline-success">Activate</button>{% endif %}
-                    </form>
+                    {% if f.is_active %}
                     <form method="post" action="{{ url_for('petrol_pumps.carriage_feeds_delete', feed_id=f.id) }}" class="d-inline"
                           onsubmit="return confirm('Permanently delete this cash feed of PKR {{ '%.0f'|format(f.amount) }}? This cannot be undone.');">
                         <button class="btn btn-sm btn-outline-danger">Delete</button>
                     </form>
+                    {% else %}
+                    <form method="post" action="{{ url_for('petrol_pumps.carriage_feeds_toggle_status', feed_id=f.id) }}" class="d-inline">
+                        <button class="btn btn-sm btn-outline-success">Activate</button>
+                    </form>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}

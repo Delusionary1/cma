@@ -41,6 +41,10 @@
 .pps-card .val{font-family:var(--fd);font-weight:700;font-size:24px;color:#fff;line-height:1.1;margin-top:9px}
 .pps-card .val small{font-size:11px;color:#8C96A8;font-weight:600;margin-right:4px}
 .pps-card .sub{font-size:11px;color:#8C96A8;margin-top:6px}
+.pps-card-link{display:block;text-decoration:none;color:inherit;cursor:pointer;
+    transition:transform .2s var(--ease),border-color .2s var(--ease),background .2s var(--ease)}
+.pps-card-link:hover{border-color:rgba(51,214,200,.5);background:rgba(51,214,200,.07);
+    transform:translateY(-2px);color:inherit}
 .pps-range{font-family:var(--fm);font-size:10px;letter-spacing:.1em;color:#69707F;margin-top:12px}
 </style>
 <div class="pps-wrap">
@@ -74,11 +78,11 @@
             <div class="val {{ 'text-danger' if summary.current_cash < 0 }}"><small>PKR</small>{{ '{:,.0f}'.format(summary.current_cash) }}</div>
             <div class="sub">At pump now (sale − expense − sent to HO)</div>
         </div>
-        <div class="pps-card" style="--cc:#33D6C8">
+        <a class="pps-card pps-card-link" style="--cc:#33D6C8" href="{{ url_for('petrol_pumps.tank_stock', petrol_pump_id=pump.id) }}">
             <div class="lab"><i></i>Current Stock</div>
             <div class="val">{{ '{:,.0f}'.format(summary.current_stock) }}<small style="margin-left:5px">L</small></div>
-            <div class="sub">Live fuel in all tanks now</div>
-        </div>
+            <div class="sub">Live fuel in all tanks now — tap for tank-wise stock &amp; rates</div>
+        </a>
         <div class="pps-card" style="--cc:#A78BFA">
             <div class="lab"><i></i>Profit</div>
             <div class="val {{ 'text-danger' if summary.profit < 0 else 'text-success' }}"><small>PKR</small>{{ '{:,.0f}'.format(summary.profit) }}</div>

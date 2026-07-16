@@ -90,13 +90,15 @@
                 <td class="text-end text-nowrap">
                     <a href="{{ url_for('petrol_pumps.machine_readings_view', reading_id=r.id) }}" class="btn btn-sm btn-outline-primary">View</a>
                     <a href="{{ url_for('petrol_pumps.machine_readings_edit', reading_id=r.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                    <form method="post" action="{{ url_for('petrol_pumps.machine_readings_toggle_status', reading_id=r.id) }}" class="d-inline">
-                        {% if r.is_active %}
-                        <button type="submit" class="btn btn-sm btn-outline-warning">Deactivate</button>
-                        {% else %}
-                        <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
-                        {% endif %}
+                    {% if r.is_active %}
+                    <form method="post" action="{{ url_for('petrol_pumps.machine_readings_delete', reading_id=r.id) }}" class="d-inline" onsubmit="return confirm('Permanently delete this reading? This cannot be undone.');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                     </form>
+                    {% else %}
+                    <form method="post" action="{{ url_for('petrol_pumps.machine_readings_toggle_status', reading_id=r.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
+                    </form>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}

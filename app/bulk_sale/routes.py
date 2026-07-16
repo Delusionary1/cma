@@ -460,3 +460,20 @@ def sales_toggle_status(sale_id):
     state = "activated" if sale.is_active else "deactivated"
     flash(f"Bulk sale {state}.", "info")
     return redirect(url_for("bulk_sale.sales_list"))
+
+
+@bulk_sale_bp.route("/sales/<int:sale_id>/delete", methods=["POST"])
+@role_required(*BULK_ROLES)
+def sales_delete(sale_id):
+    from app.approvals.models import Approval
+    from app.attachments.models import Attachment
+
+    sale = db.get_or_404(BulkSale, sale_id)
+    sale.is_active = False
+    posting.sync_bulk_sale(sale)  # reverse GL before removing
+    Approval.query.filter_by(entity_type="bulk_sale", entity_id=sale.id).delete()
+    Attachment.query.filter_by(entity_type="bulk_sale", entity_id=sale.id).delete()
+    db.session.delete(sale)
+    db.session.commit()
+    flash("Bulk sale permanently deleted.", "success")
+    return redirect(url_for("bulk_sale.sales_list"))

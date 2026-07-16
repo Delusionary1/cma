@@ -26,6 +26,12 @@
             <button type="submit" class="btn btn-outline-success">Activate</button>
             {% endif %}
         </form>
+        <form method="post"
+              action="{{ url_for('master_data.accounts_delete', account_id=account.id) }}"
+              class="d-inline"
+              onsubmit="return confirm('Permanently delete account \'{{ account.name|e }}\'? This cannot be undone. (If any transaction used it, deactivate instead.)');">
+            <button type="submit" class="btn btn-outline-danger">Delete</button>
+        </form>
     </div>
 </div>
 

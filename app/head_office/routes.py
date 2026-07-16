@@ -618,6 +618,25 @@ def cash_receipts_toggle_status(receipt_id):
     return redirect(url_for("head_office.cash_receipts_list"))
 
 
+@head_office_bp.route("/cash-receipts/<int:receipt_id>/delete", methods=["POST"])
+@role_required(*HO_ROLES)
+def cash_receipts_delete(receipt_id):
+    receipt = db.get_or_404(HeadOfficeCashReceipt, receipt_id)
+    if receipt.is_posted and not _can_unpost_receipt(receipt):
+        flash(
+            f"Cannot delete: '{receipt.received_into_account.name}' would go negative. "
+            "Reduce or reverse other transactions first.",
+            "danger",
+        )
+        return redirect(url_for("head_office.cash_receipts_list"))
+    if receipt.is_posted:
+        _apply_receipt(receipt, -1)
+    db.session.delete(receipt)
+    db.session.commit()
+    flash("Cash receipt deleted (any balance effect reversed).", "success")
+    return redirect(url_for("head_office.cash_receipts_list"))
+
+
 # --------------------------------------------------------------------------- #
 # Head Office Expenses
 # --------------------------------------------------------------------------- #
@@ -910,6 +929,26 @@ def expenses_toggle_status(expense_id):
     return redirect(url_for("head_office.expenses_list"))
 
 
+@head_office_bp.route("/expenses/<int:expense_id>/delete", methods=["POST"])
+@role_required(*HO_ROLES)
+def expenses_delete(expense_id):
+    from app.approvals.models import Approval
+    from app.attachments.models import Attachment
+
+    expense = db.get_or_404(HeadOfficeExpense, expense_id)
+    if expense.is_posted and expense.paid_from_account is not None:
+        expense.paid_from_account.current_balance = (
+            expense.paid_from_account.current_balance or Decimal("0")
+        ) + expense.amount
+    posting.clear_source(posting.SOURCE_HO_EXPENSE, expense.id)
+    Approval.query.filter_by(entity_type="ho_expense", entity_id=expense.id).delete()
+    Attachment.query.filter_by(entity_type="ho_expense", entity_id=expense.id).delete()
+    db.session.delete(expense)
+    db.session.commit()
+    flash("Expense deleted (any balance effect reversed).", "success")
+    return redirect(url_for("head_office.expenses_list"))
+
+
 # --------------------------------------------------------------------------- #
 # Vendor / PSO Payments
 # --------------------------------------------------------------------------- #
@@ -1134,6 +1173,24 @@ def vendor_payments_toggle_status(payment_id):
     db.session.commit()
     state = "activated" if payment.is_active else "deactivated"
     flash(f"Payment {state}.", "info")
+    return redirect(url_for("head_office.vendor_payments_list"))
+
+
+@head_office_bp.route("/vendor-payments/<int:payment_id>/delete", methods=["POST"])
+@role_required(*HO_ROLES)
+def vendor_payments_delete(payment_id):
+    from app.approvals.models import Approval
+
+    payment = db.get_or_404(VendorPayment, payment_id)
+    if payment.is_posted and payment.paid_from_account is not None:
+        payment.paid_from_account.current_balance = (
+            payment.paid_from_account.current_balance or Decimal("0")
+        ) + payment.amount
+    posting.clear_source(posting.SOURCE_VENDOR_PAYMENT, payment.id)
+    Approval.query.filter_by(entity_type="vendor_payment", entity_id=payment.id).delete()
+    db.session.delete(payment)
+    db.session.commit()
+    flash("Payment deleted (any balance effect reversed).", "success")
     return redirect(url_for("head_office.vendor_payments_list"))
 
 

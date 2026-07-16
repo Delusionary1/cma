@@ -16,13 +16,15 @@
     <h1 class="h3 mb-0">{{ machine.machine_name }}</h1>
     <div>
         <a href="{{ url_for('petrol_pumps.machines_edit', machine_id=machine.id) }}" class="btn btn-outline-secondary">Edit</a>
-        <form method="post" action="{{ url_for('petrol_pumps.machines_toggle_status', machine_id=machine.id) }}" class="d-inline">
-            {% if machine.is_active %}
-            <button type="submit" class="btn btn-outline-warning">Deactivate</button>
-            {% else %}
-            <button type="submit" class="btn btn-outline-success">Activate</button>
-            {% endif %}
+        {% if machine.is_active %}
+        <form method="post" action="{{ url_for('petrol_pumps.machines_delete', machine_id=machine.id) }}" class="d-inline" onsubmit="return confirm('Permanently delete this machine? This cannot be undone.');">
+            <button type="submit" class="btn btn-outline-danger">Delete</button>
         </form>
+        {% else %}
+        <form method="post" action="{{ url_for('petrol_pumps.machines_toggle_status', machine_id=machine.id) }}" class="d-inline">
+            <button type="submit" class="btn btn-outline-success">Activate</button>
+        </form>
+        {% endif %}
     </div>
 </div>
 

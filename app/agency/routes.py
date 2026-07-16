@@ -368,6 +368,21 @@ def purchases_toggle_status(purchase_id):
     return redirect(url_for("agency.purchases_list"))
 
 
+@agency_bp.route("/purchases/<int:purchase_id>/delete", methods=["POST"])
+@role_required(*AGENCY_ROLES)
+def purchases_delete(purchase_id):
+    from app.attachments.models import Attachment
+
+    purchase = db.get_or_404(AgencyPurchase, purchase_id)
+    purchase.is_active = False
+    posting.sync_agency_purchase(purchase)  # reverse GL before removing
+    Attachment.query.filter_by(entity_type="agency_purchase", entity_id=purchase.id).delete()
+    db.session.delete(purchase)
+    db.session.commit()
+    flash("Agency purchase permanently deleted.", "success")
+    return redirect(url_for("agency.purchases_list"))
+
+
 # --------------------------------------------------------------------------- #
 # Agency Sales
 # --------------------------------------------------------------------------- #
@@ -607,4 +622,19 @@ def sales_toggle_status(sale_id):
     db.session.commit()
     state = "activated" if sale.is_active else "deactivated"
     flash(f"Agency sale {state}.", "info")
+    return redirect(url_for("agency.sales_list"))
+
+
+@agency_bp.route("/sales/<int:sale_id>/delete", methods=["POST"])
+@role_required(*AGENCY_ROLES)
+def sales_delete(sale_id):
+    from app.approvals.models import Approval
+
+    sale = db.get_or_404(AgencySale, sale_id)
+    sale.is_active = False
+    posting.sync_agency_sale(sale)  # reverse GL before removing
+    Approval.query.filter_by(entity_type="agency_sale", entity_id=sale.id).delete()
+    db.session.delete(sale)
+    db.session.commit()
+    flash("Agency sale permanently deleted.", "success")
     return redirect(url_for("agency.sales_list"))

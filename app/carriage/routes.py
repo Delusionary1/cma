@@ -493,6 +493,19 @@ def trips_toggle_status(trip_id):
     return redirect(url_for("carriage.trips_list"))
 
 
+@carriage_bp.route("/trips/<int:trip_id>/delete", methods=["POST"])
+@role_required(*CARRIAGE_ROLES)
+def trips_delete(trip_id):
+    trip = db.get_or_404(CarriageTrip, trip_id)
+    trip.is_active = False
+    posting.sync_carriage_trip(trip)  # reverse GL before removing
+    trip_number = trip.trip_number
+    db.session.delete(trip)
+    db.session.commit()
+    flash(f"Trip {trip_number} permanently deleted.", "success")
+    return redirect(url_for("carriage.trips_list"))
+
+
 # --------------------------------------------------------------------------- #
 # Carriage expenses (standalone business expenses, separate from trip costs)
 # --------------------------------------------------------------------------- #

@@ -54,13 +54,15 @@
                 <td class="text-end text-nowrap">
                     <a href="{{ url_for('petrol_pumps.nozzles_view', nozzle_id=nozzle.id) }}" class="btn btn-sm btn-outline-primary">View</a>
                     <a href="{{ url_for('petrol_pumps.nozzles_edit', nozzle_id=nozzle.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                    <form method="post" action="{{ url_for('petrol_pumps.nozzles_toggle_status', nozzle_id=nozzle.id) }}" class="d-inline">
-                        {% if nozzle.is_active %}
-                        <button type="submit" class="btn btn-sm btn-outline-warning">Deactivate</button>
-                        {% else %}
-                        <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
-                        {% endif %}
+                    {% if nozzle.is_active %}
+                    <form method="post" action="{{ url_for('petrol_pumps.nozzles_delete', nozzle_id=nozzle.id) }}" class="d-inline" onsubmit="return confirm('Permanently delete this nozzle? This cannot be undone.');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                     </form>
+                    {% else %}
+                    <form method="post" action="{{ url_for('petrol_pumps.nozzles_toggle_status', nozzle_id=nozzle.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
+                    </form>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}

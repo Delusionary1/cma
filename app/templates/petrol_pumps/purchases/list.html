@@ -84,13 +84,15 @@
                 <td class="text-end text-nowrap">
                     <a href="{{ url_for('petrol_pumps.purchases_view', purchase_id=p.id) }}" class="btn btn-sm btn-outline-primary">View</a>
                     <a href="{{ url_for('petrol_pumps.purchases_edit', purchase_id=p.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                    <form method="post" action="{{ url_for('petrol_pumps.purchases_toggle_status', purchase_id=p.id) }}" class="d-inline">
-                        {% if p.is_active %}
-                        <button type="submit" class="btn btn-sm btn-outline-warning">Deactivate</button>
-                        {% else %}
-                        <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
-                        {% endif %}
+                    {% if p.is_active %}
+                    <form method="post" action="{{ url_for('petrol_pumps.purchases_delete', purchase_id=p.id) }}" class="d-inline" onsubmit="return confirm('Permanently delete this purchase? This cannot be undone.');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                     </form>
+                    {% else %}
+                    <form method="post" action="{{ url_for('petrol_pumps.purchases_toggle_status', purchase_id=p.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
+                    </form>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}
