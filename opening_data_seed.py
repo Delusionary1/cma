@@ -33,55 +33,82 @@ PSO_BASE_PAYABLE = Decimal("29909000")
 # --------------------------------------------------------------------------- #
 # 1. Bank / cash accounts
 # --------------------------------------------------------------------------- #
+# Per-pump real bank details (name, account_number, balance). Alfateh's real
+# bank hasn't been given yet, so it just gets a proper name + petrol_pump link
+# with a zero balance, same as its Cash account.
+PUMP_BANK_DETAILS = {
+    "Punjab Petroleum": ("Punjab Petroleum Service", "0010003055900074", Decimal("1162880")),
+    "Ahmed Filling Station": ("Ahmed Filling Station", "0010003055900118", Decimal("1442538")),
+    "Alfateh Petroleum": ("Alfateh Petroleum Bank", None, Decimal("0")),
+}
+
+# Positional fallback for the very old pre-fix default seed, which created
+# unlinked "Pump 1/2/3 Cash"/"Pump 1/2/3 Bank" rows with no petrol_pump_id at
+# all, in this pump order.
+OLD_STYLE_POSITION = {
+    "Punjab Petroleum": 1, "Ahmed Filling Station": 2, "Alfateh Petroleum": 3,
+}
+
+
 def seed_bank_accounts():
     head_office = BusinessUnit.query.filter_by(type=BusinessUnitType.HEAD_OFFICE).first()
-    punjab = PetrolPump.query.filter_by(name="Punjab Petroleum").first()
-    ahmed = PetrolPump.query.filter_by(name="Ahmed Filling Station").first()
 
-    def set_account(*, find_by, name, account_number, balance, petrol_pump=None):
-        """find_by: a CashBankAccount query filter dict to locate the existing
-        (default-seeded) row; falls back to matching by the final `name` if
-        the default row was already renamed by a previous run."""
-        acc = CashBankAccount.query.filter_by(**find_by).first()
+    def set_account(*, candidates, name, account_type, account_number, balance, petrol_pump=None):
+        """Find the existing row to repurpose by trying each candidate name in
+        order (covers both the current default-seed naming AND the very old
+        pre-fix "Pump N Cash/Bank" naming some deployments may still have from
+        before pump names were wired up), else fall back to matching by
+        (petrol_pump, account_type) which is name-independent, else create."""
+        acc = None
+        for candidate in candidates:
+            acc = CashBankAccount.query.filter_by(name=candidate).first()
+            if acc is not None:
+                break
+        if acc is None and petrol_pump is not None:
+            acc = CashBankAccount.query.filter_by(
+                petrol_pump_id=petrol_pump.id, account_type=account_type
+            ).first()
         if acc is None:
-            acc = CashBankAccount.query.filter_by(name=name).first()
-        if acc is None:
-            acc = CashBankAccount(business_unit=head_office, account_type="Bank")
+            acc = CashBankAccount(business_unit=head_office, account_type=account_type)
             db.session.add(acc)
         acc.name = name
+        acc.account_type = account_type
         acc.account_number = account_number
         acc.opening_balance = balance
         acc.current_balance = balance
         if petrol_pump is not None:
             acc.petrol_pump = petrol_pump
             acc.business_unit = petrol_pump.business_unit
+        return acc
 
-    # Head Office's own two bank accounts.
+    # Head Office's own two bank accounts + cash in hand.
     set_account(
-        find_by={"name": "Head Office Bank"}, name="Muhammad Asghar",
-        account_number="001003055900101", balance=Decimal("6500466"),
+        candidates=["Head Office Bank", "Muhammad Asghar"], name="Muhammad Asghar",
+        account_type="Bank", account_number="001003055900101", balance=Decimal("300000"),
     )
     set_account(
-        find_by={"name": "Ch Muhammad Asghar & CO"}, name="Ch Muhammad Asghar & CO",
-        account_number="0010003055900080", balance=Decimal("6128162"),
+        candidates=["Ch Muhammad Asghar & CO"], name="Ch Muhammad Asghar & CO",
+        account_type="Bank", account_number="0010003055900080", balance=Decimal("6128162"),
+    )
+    set_account(
+        candidates=["Head Office Cash"], name="Head Office Cash",
+        account_type="Cash", account_number=None, balance=Decimal("67000"),
     )
 
-    # Head Office cash in hand.
-    ho_cash = CashBankAccount.query.filter_by(name="Head Office Cash").first()
-    if ho_cash is not None:
-        ho_cash.opening_balance = Decimal("67000")
-        ho_cash.current_balance = Decimal("67000")
-
-    # Each pump's own bank account (default-seeded as "<Pump> Bank").
-    if punjab is not None:
+    # Every pump's own Cash + Bank account.
+    for pump_name, (bank_name, bank_number, bank_balance) in PUMP_BANK_DETAILS.items():
+        pump = PetrolPump.query.filter_by(name=pump_name).first()
+        if pump is None:
+            continue
+        pos = OLD_STYLE_POSITION[pump_name]
         set_account(
-            find_by={"name": "Punjab Petroleum Bank"}, name="Punjab Petroleum Service",
-            account_number="0010003055900074", balance=Decimal("1162880"), petrol_pump=punjab,
+            candidates=[f"{pump_name} Cash", f"Pump {pos} Cash"], name=f"{pump_name} Cash",
+            account_type="Cash", account_number=None, balance=Decimal("0"), petrol_pump=pump,
         )
-    if ahmed is not None:
         set_account(
-            find_by={"name": "Ahmed Filling Station Bank"}, name="Ahmed Filling Station",
-            account_number="0010003055900118", balance=Decimal("1442538"), petrol_pump=ahmed,
+            candidates=[f"{pump_name} Bank", f"Pump {pos} Bank", bank_name],
+            name=bank_name, account_type="Bank", account_number=bank_number,
+            balance=bank_balance, petrol_pump=pump,
         )
 
     db.session.commit()
