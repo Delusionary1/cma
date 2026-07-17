@@ -1,0 +1,7 @@
+Using database: sqlite:///C:/Users/User/AppData/Local/Temp/claude/c--Users-User-Downloads-project1-cma/815bd9de-b4ed-40e8-9412-e6acf0e4d0c3/scratchpad/fresh_db_test/test.db
+Applying database migrations...
+Migrations applied.
+Seeding complete. New records -> company: 0, business_units: 0, petrol_pumps: 0, product_categories: 0, products: 0, vendors: 0, customers: 0, drivers: 0, vehicles: 0, cash_bank_accounts: 0, expense_categories: 0, roles: 0, users: 0, chart_of_accounts: 0, pump_machines: 0, pump_nozzles: 0, pump_tanks: 0
+Seeding opening balance data...
+Opening balance data seeded.
+DONE — deployment setup succeeded.

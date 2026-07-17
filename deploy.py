@@ -70,6 +70,15 @@ try:
         }
         summary = ", ".join(f"{key}: {count}" for key, count in created.items())
         log(f"Seeding complete. New records -> {summary}")
+
+        # 3) Seed the real opening-balance data (bank accounts, PSO payable,
+        # each pump's tank/machine/nozzle setup, purchase rates, opening
+        # fuel/lubricant stock). Idempotent — safe to run on every deploy.
+        log("Seeding opening balance data...")
+        import opening_data_seed
+        opening_data_seed.run_all()
+        log("Opening balance data seeded.")
+
         log("DONE — deployment setup succeeded.")
 except Exception:
     log("ERROR — deployment setup FAILED:")
