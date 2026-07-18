@@ -30,5 +30,10 @@ uploads/
 # Local agent/editor state
 .claude/
 
+# deploy.py rewrites this on every run — never track it, or the server's
+# working copy diverges from the repo and blocks the next `git pull`.
+deploy_log.txt
+
 # Nested clone of the remote (do not commit as submodule)
 cma/
+deploy_log.txt
