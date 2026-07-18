@@ -29,6 +29,45 @@ from app.petrol_pumps.models import PumpMachine, PumpNozzle, PumpPurchase, PumpP
 OPENING_DATE = date(2026, 6, 30)
 PSO_BASE_PAYABLE = Decimal("29909000")
 
+# Distinguishing keyword per pump, used as a last-resort fuzzy match if the
+# exact name isn't found (e.g. the pump was renamed, or has extra whitespace).
+_PUMP_KEYWORDS = {
+    "Punjab Petroleum": "Punjab",
+    "Ahmed Filling Station": "Ahmed",
+    "Alfateh Petroleum": "Alfateh",
+}
+
+
+def _find_pump(pump_name):
+    """Robustly resolve a pump by name: exact match, then case/whitespace-
+    insensitive, then a fuzzy keyword match. Always logs what it found (or
+    didn't) so a deploy log makes it obvious WHY a pump's data was skipped,
+    instead of silently doing nothing."""
+    pump = PetrolPump.query.filter_by(name=pump_name).first()
+    if pump is not None:
+        return pump
+
+    pump = PetrolPump.query.filter(
+        db.func.lower(db.func.trim(PetrolPump.name)) == pump_name.lower()
+    ).first()
+    if pump is not None:
+        print(f"NOTE: pump '{pump_name}' matched case/whitespace-insensitively "
+              f"to existing pump '{pump.name}' (id={pump.id}).")
+        return pump
+
+    keyword = _PUMP_KEYWORDS.get(pump_name)
+    if keyword:
+        pump = PetrolPump.query.filter(PetrolPump.name.ilike(f"%{keyword}%")).first()
+        if pump is not None:
+            print(f"NOTE: pump '{pump_name}' fuzzy-matched to existing pump "
+                  f"'{pump.name}' (id={pump.id}) via keyword '{keyword}'.")
+            return pump
+
+    all_pumps = [p.name for p in PetrolPump.query.all()]
+    print(f"WARNING: could not find pump '{pump_name}' by any match — "
+          f"SKIPPING its data. Pumps that actually exist in this database: {all_pumps}")
+    return None
+
 
 # --------------------------------------------------------------------------- #
 # 1. Bank / cash accounts
@@ -97,7 +136,7 @@ def seed_bank_accounts():
 
     # Every pump's own Cash + Bank account.
     for pump_name, (bank_name, bank_number, bank_balance) in PUMP_BANK_DETAILS.items():
-        pump = PetrolPump.query.filter_by(name=pump_name).first()
+        pump = _find_pump(pump_name)
         if pump is None:
             continue
         pos = OLD_STYLE_POSITION[pump_name]
@@ -163,9 +202,8 @@ PUMP_MACHINE_SPECS = {
 
 def seed_pump_setups():
     for pump_name, tank_specs in PUMP_TANK_SPECS.items():
-        pump = PetrolPump.query.filter_by(name=pump_name).first()
+        pump = _find_pump(pump_name)
         if pump is None:
-            print(f"skip {pump_name}: pump not found")
             continue
 
         # Idempotency guard: if this pump's tanks already match (by name),
@@ -315,7 +353,7 @@ def _get_or_create_purchase(pump, invoice_number):
 
 def seed_opening_fuel_stock():
     for pump_name, rates in PUMP_FUEL_RATES.items():
-        pump = PetrolPump.query.filter_by(name=pump_name).first()
+        pump = _find_pump(pump_name)
         if pump is None:
             continue
         purchase, is_new = _get_or_create_purchase(pump, "OPENING-STOCK")
@@ -342,7 +380,7 @@ def seed_opening_fuel_stock():
 def seed_opening_lubricant_stock():
     category = ProductCategory.query.filter_by(name="Lubricants").first()
     for pump_name, rows in PUMP_LUBRICANT_ROWS.items():
-        pump = PetrolPump.query.filter_by(name=pump_name).first()
+        pump = _find_pump(pump_name)
         if pump is None:
             continue
         purchase, is_new = _get_or_create_purchase(pump, "OPENING-LUBRICANTS")
@@ -401,6 +439,8 @@ def seed_pso_payable():
 def run_all():
     """Run every step. Assumes an app context is already active (this is what
     `deploy.py` calls). For standalone use, see `main()` below."""
+    existing_pumps = [(p.id, p.name) for p in PetrolPump.query.all()]
+    print(f"Pumps currently in this database: {existing_pumps}")
     seed_bank_accounts()
     seed_pump_setups()
     seed_purchase_rates()
