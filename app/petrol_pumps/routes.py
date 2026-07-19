@@ -1345,10 +1345,12 @@ def machine_readings_console():
 
     today = date.today()
     # Shift + date come from the URL so switching them reloads with a fresh
-    # opening meter (a nozzle's opening = the last saved closing). Default Day.
+    # opening meter (a nozzle's opening = the last saved closing). Night is
+    # entered first each day (its closing becomes Day's opening), so it's
+    # the default.
     sel_shift = request.args.get("shift")
     if sel_shift not in CONSOLE_SHIFTS:
-        sel_shift = SHIFT_DAY
+        sel_shift = SHIFT_NIGHT
     sel_date = _parse_date_arg("reading_date") or today
 
     nozzles = []

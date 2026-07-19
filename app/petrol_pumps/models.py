@@ -119,9 +119,11 @@ class PumpTank(db.Model):
 DEFAULT_SHIFT = "Full Day"
 
 # 12-hour shifts used by the machine Reading Console (two entries per day).
+# Night is entered FIRST (its closing meter becomes Day's opening meter), so
+# it's listed/shown first throughout the console.
 SHIFT_DAY = "Day (12h)"
 SHIFT_NIGHT = "Night (12h)"
-CONSOLE_SHIFTS = [SHIFT_DAY, SHIFT_NIGHT]
+CONSOLE_SHIFTS = [SHIFT_NIGHT, SHIFT_DAY]
 
 
 class MachineReading(db.Model):

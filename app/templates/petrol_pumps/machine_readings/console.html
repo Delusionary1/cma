@@ -153,8 +153,8 @@
             <div class="rc-ctrl">
                 <label>Shift</label>
                 <div class="rc-seg" id="rcSeg">
-                    <button type="button" class="{{ 'on' if sel_shift == shift_day }}" data-shift="{{ shift_day }}">☀ Day (12h){% if done_day %} ✓{% endif %}</button>
                     <button type="button" class="{{ 'on' if sel_shift == shift_night }}" data-shift="{{ shift_night }}">☾ Night (12h){% if done_night %} ✓{% endif %}</button>
+                    <button type="button" class="{{ 'on' if sel_shift == shift_day }}" data-shift="{{ shift_day }}">☀ Day (12h){% if done_day %} ✓{% endif %}</button>
                 </div>
             </div>
             {% for p in products %}
