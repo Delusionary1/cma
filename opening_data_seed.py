@@ -201,57 +201,105 @@ PUMP_MACHINE_SPECS = {
 
 
 def seed_pump_setups():
+    """Set up each pump's real tanks/machines/nozzles idempotently and WITHOUT
+    destructive deletes.
+
+    Why no delete-and-rebuild: production runs on MySQL, which ENFORCES foreign
+    keys (SQLite does not). Once an opening-stock PumpPurchaseItem references a
+    tank, deleting that tank raises an IntegrityError on MySQL — which silently
+    broke the whole pump section on the server while working fine locally. So
+    instead we UPSERT the real rows by name (keeping their ids stable, so
+    purchase items stay valid) and merely DEACTIVATE any leftover default rows
+    ("Petrol Tank", "Machine 1", ...) — deactivation is always FK-safe.
+    """
     for pump_name, tank_specs in PUMP_TANK_SPECS.items():
         pump = _find_pump(pump_name)
         if pump is None:
             continue
 
-        # Idempotency guard: if this pump's tanks already match (by name),
-        # this pump's real setup has already been seeded — skip it.
-        existing_names = {
-            t.tank_name for t in PumpTank.query.filter_by(petrol_pump_id=pump.id).all()
-        }
-        if existing_names == set(tank_specs.keys()):
-            print(f"{pump_name}: tanks already match — skipping rebuild.")
-            continue
+        desired_tank_names = set(tank_specs.keys())
+        machine_specs = PUMP_MACHINE_SPECS.get(pump_name, {})
+        # Which machine names + nozzle numbers this pump SHOULD have.
+        desired_machine_names = set()
+        desired_nozzle_numbers = set()
+        for tank_name, machines in machine_specs.items():
+            for suffix, nozzle_numbers in machines:
+                desired_machine_names.add(f"{tank_name} Machine {suffix}")
+                desired_nozzle_numbers.update(nozzle_numbers)
 
-        # Replace whatever tanks/machines/nozzles this pump currently has
-        # (the seed defaults, or a stale prior attempt) with the real setup.
-        PumpNozzle.query.filter_by(petrol_pump_id=pump.id).delete()
-        PumpMachine.query.filter_by(petrol_pump_id=pump.id).delete()
-        PumpTank.query.filter_by(petrol_pump_id=pump.id).delete()
-        db.session.flush()
-
+        # --- Upsert tanks by (pump, tank_name) ---
         tanks = {}
         for tank_name, (product_name, capacity, current_stock) in tank_specs.items():
             product = Product.query.filter_by(name=product_name).first()
-            tank = PumpTank(
-                petrol_pump_id=pump.id, product_id=product.id, tank_name=tank_name,
-                capacity_liters=capacity, opening_stock_liters=current_stock,
-                current_stock_liters=current_stock, is_active=True,
-            )
-            db.session.add(tank)
+            tank = PumpTank.query.filter_by(
+                petrol_pump_id=pump.id, tank_name=tank_name
+            ).first()
+            newly_created = tank is None
+            if newly_created:
+                tank = PumpTank(petrol_pump_id=pump.id, tank_name=tank_name)
+                db.session.add(tank)
+            if product is not None:
+                tank.product_id = product.id
+            tank.capacity_liters = capacity
+            tank.opening_stock_liters = current_stock
+            # Only (re)set live stock when the tank is new or still empty, so a
+            # re-deploy never wipes out real trading once it has started.
+            if newly_created or not tank.current_stock_liters:
+                tank.current_stock_liters = current_stock
+            tank.is_active = True
             db.session.flush()
             tanks[tank_name] = tank
 
-        for tank_name, machines in PUMP_MACHINE_SPECS.get(pump_name, {}).items():
+        # --- Upsert machines by (pump, machine_name) + their nozzles ---
+        for tank_name, machines in machine_specs.items():
             tank = tanks[tank_name]
             for suffix, nozzle_numbers in machines:
-                machine = PumpMachine(
-                    petrol_pump_id=pump.id, product_id=tank.product_id, tank_id=tank.id,
-                    machine_name=f"{tank_name} Machine {suffix}", is_active=True,
-                )
-                db.session.add(machine)
+                machine_name = f"{tank_name} Machine {suffix}"
+                machine = PumpMachine.query.filter_by(
+                    petrol_pump_id=pump.id, machine_name=machine_name
+                ).first()
+                if machine is None:
+                    machine = PumpMachine(
+                        petrol_pump_id=pump.id, machine_name=machine_name
+                    )
+                    db.session.add(machine)
+                machine.product_id = tank.product_id
+                machine.tank_id = tank.id
+                machine.is_active = True
                 db.session.flush()
                 for num in nozzle_numbers:
-                    db.session.add(PumpNozzle(
-                        petrol_pump_id=pump.id, machine_id=machine.id,
-                        product_id=tank.product_id, nozzle_number=num,
-                        opening_reading=Decimal("0"), current_reading=Decimal("0"),
-                        is_active=True,
-                    ))
+                    nozzle = PumpNozzle.query.filter_by(
+                        petrol_pump_id=pump.id, nozzle_number=num
+                    ).first()
+                    if nozzle is None:
+                        nozzle = PumpNozzle(
+                            petrol_pump_id=pump.id, nozzle_number=num,
+                            opening_reading=Decimal("0"), current_reading=Decimal("0"),
+                        )
+                        db.session.add(nozzle)
+                    nozzle.machine_id = machine.id
+                    nozzle.product_id = tank.product_id
+                    nozzle.is_active = True
+                    db.session.flush()
+
+        # --- Deactivate any leftover default rows (never delete — FK-safe) ---
+        deactivated = 0
+        for nozzle in PumpNozzle.query.filter_by(petrol_pump_id=pump.id).all():
+            if nozzle.nozzle_number not in desired_nozzle_numbers:
+                nozzle.is_active = False
+                deactivated += 1
+        for machine in PumpMachine.query.filter_by(petrol_pump_id=pump.id).all():
+            if machine.machine_name not in desired_machine_names:
+                machine.is_active = False
+                deactivated += 1
+        for tank in PumpTank.query.filter_by(petrol_pump_id=pump.id).all():
+            if tank.tank_name not in desired_tank_names:
+                tank.is_active = False
+                deactivated += 1
+
         db.session.commit()
-        print(f"{pump_name}: tanks/machines/nozzles rebuilt.")
+        print(f"{pump_name}: tanks/machines/nozzles upserted "
+              f"({len(tanks)} tanks; {deactivated} leftover default rows deactivated).")
 
 
 # --------------------------------------------------------------------------- #
@@ -352,17 +400,23 @@ def _get_or_create_purchase(pump, invoice_number):
 
 
 def seed_opening_fuel_stock():
+    # Rebuild the purchase's line items every run so they always reference the
+    # CURRENT active tanks — this self-heals any stale/broken tank links left by
+    # earlier (delete-and-rebuild) deploys. PumpPurchaseItem is a leaf table
+    # (nothing references it), so clearing it is FK-safe on MySQL.
     for pump_name, rates in PUMP_FUEL_RATES.items():
         pump = _find_pump(pump_name)
         if pump is None:
             continue
         purchase, is_new = _get_or_create_purchase(pump, "OPENING-STOCK")
-        if not is_new:
-            print(f"{pump_name}: OPENING-STOCK purchase already exists — skipping.")
-            continue
+        PumpPurchaseItem.query.filter_by(pump_purchase_id=purchase.id).delete()
+        db.session.flush()
         total = Decimal("0")
+        item_count = 0
         for tank in PumpTank.query.filter_by(petrol_pump_id=pump.id, is_active=True).all():
-            qty = tank.current_stock_liters or Decimal("0")
+            # Use the tank's OPENING stock (fixed) not its live current stock, so
+            # re-deploying after trading never rewrites the opening record.
+            qty = tank.opening_stock_liters or tank.current_stock_liters or Decimal("0")
             if qty <= 0:
                 continue
             rate = Decimal(rates.get(tank.tank_name, "0"))
@@ -372,9 +426,11 @@ def seed_opening_fuel_stock():
                 tank_id=tank.id, quantity_liters=qty, rate=rate, total_amount=amount,
             ))
             total += amount
+            item_count += 1
         purchase.total_amount = total
         db.session.commit()
-        print(f"{pump_name}: opening fuel stock purchase created (total {total}).")
+        print(f"{pump_name}: opening fuel stock purchase set "
+              f"({item_count} tank lines, total {total}).")
 
 
 def seed_opening_lubricant_stock():
@@ -384,9 +440,8 @@ def seed_opening_lubricant_stock():
         if pump is None:
             continue
         purchase, is_new = _get_or_create_purchase(pump, "OPENING-LUBRICANTS")
-        if not is_new:
-            print(f"{pump_name}: OPENING-LUBRICANTS purchase already exists — skipping.")
-            continue
+        PumpPurchaseItem.query.filter_by(pump_purchase_id=purchase.id).delete()
+        db.session.flush()
         total = Decimal("0")
         for name, qty, rate, amount in rows:
             product = Product.query.filter_by(name=name, category_id=category.id).first()
@@ -404,7 +459,8 @@ def seed_opening_lubricant_stock():
             total += amount
         purchase.total_amount = total
         db.session.commit()
-        print(f"{pump_name}: opening lubricant stock purchase created (total {total}).")
+        print(f"{pump_name}: opening lubricant stock purchase set "
+              f"({len(rows)} lines, total {total}).")
 
 
 # --------------------------------------------------------------------------- #
