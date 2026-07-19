@@ -69,6 +69,30 @@ def _find_pump(pump_name):
     return None
 
 
+# Positional mapping for very old pre-fix defaults: bare "Pump N" pump names
+# (production had never been renamed) and unlinked "Pump N Cash"/"Pump N Bank"
+# accounts, both in this pump order.
+OLD_STYLE_POSITION = {
+    "Punjab Petroleum": 1, "Ahmed Filling Station": 2, "Alfateh Petroleum": 3,
+}
+
+
+def seed_pump_names():
+    """Rename bare 'Pump 1'/'Pump 2'/'Pump 3' pumps to their real names, by
+    position. Must run FIRST — every other step looks pumps up by real name,
+    so if they're still called 'Pump 1' etc. everything downstream silently
+    skips. Renaming a pump is always FK-safe (nothing references it by name)."""
+    for pump_name, pos in OLD_STYLE_POSITION.items():
+        already = PetrolPump.query.filter_by(name=pump_name).first()
+        if already is not None:
+            continue
+        old = PetrolPump.query.filter_by(name=f"Pump {pos}").first()
+        if old is not None:
+            print(f"Renaming pump 'Pump {pos}' (id={old.id}) -> '{pump_name}'.")
+            old.name = pump_name
+    db.session.commit()
+
+
 # --------------------------------------------------------------------------- #
 # 1. Bank / cash accounts
 # --------------------------------------------------------------------------- #
@@ -79,13 +103,6 @@ PUMP_BANK_DETAILS = {
     "Punjab Petroleum": ("Punjab Petroleum Service", "0010003055900074", Decimal("1162880")),
     "Ahmed Filling Station": ("Ahmed Filling Station", "0010003055900118", Decimal("1442538")),
     "Alfateh Petroleum": ("Alfateh Petroleum Bank", None, Decimal("0")),
-}
-
-# Positional fallback for the very old pre-fix default seed, which created
-# unlinked "Pump 1/2/3 Cash"/"Pump 1/2/3 Bank" rows with no petrol_pump_id at
-# all, in this pump order.
-OLD_STYLE_POSITION = {
-    "Punjab Petroleum": 1, "Ahmed Filling Station": 2, "Alfateh Petroleum": 3,
 }
 
 
@@ -497,6 +514,7 @@ def run_all():
     `deploy.py` calls). For standalone use, see `main()` below."""
     existing_pumps = [(p.id, p.name) for p in PetrolPump.query.all()]
     print(f"Pumps currently in this database: {existing_pumps}")
+    seed_pump_names()
     seed_bank_accounts()
     seed_pump_setups()
     seed_purchase_rates()
