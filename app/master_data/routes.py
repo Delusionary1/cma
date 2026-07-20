@@ -1316,13 +1316,13 @@ def _customer_usage(customer_id):
     from app.accounting.models import CustomerReceipt
     from app.agency.models import AgencySale
     from app.bulk_sale.models import BulkSale
-    from app.petrol_pumps.models import LubricantSale, PumpDailyClosing
+    from app.petrol_pumps.models import LubricantSale, PumpDailyClosingCreditSale
 
     return {
         "bulk sales": BulkSale.query.filter_by(customer_id=customer_id).count(),
         "agency sales": AgencySale.query.filter_by(customer_id=customer_id).count(),
         "lubricant sales": LubricantSale.query.filter_by(customer_id=customer_id).count(),
-        "daily-closing credit sales": PumpDailyClosing.query.filter_by(credit_customer_id=customer_id).count(),
+        "daily-closing credit sales": PumpDailyClosingCreditSale.query.filter_by(customer_id=customer_id).count(),
         "receipts": CustomerReceipt.query.filter_by(customer_id=customer_id).count(),
     }
 

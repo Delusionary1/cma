@@ -63,8 +63,14 @@
         {% endfor %}
         <tr><th>PSO Card</th><td>{{ "%.2f"|format(closing.pso_card_amount) }} <span class="text-muted">→ PSO vendor card section</span></td></tr>
         <tr><th>Credit Sale</th><td>{{ "%.2f"|format(closing.credit_sale_amount) }}
-            {% if closing.credit_sale_amount and closing.credit_sale_amount > 0 %}
-                {% if closing.credit_customer %}<span class="text-muted">→ {{ closing.credit_customer.name }} (receivable)</span>{% else %}<span class="text-danger">→ no customer</span>{% endif %}
+            {% if closing.credit_sales %}
+                <ul class="mb-0 mt-1">
+                {% for row in closing.credit_sales %}
+                    <li><span class="text-muted">{{ row.customer.name }}:</span> {{ "%.2f"|format(row.amount) }} (receivable)</li>
+                {% endfor %}
+                </ul>
+            {% elif closing.credit_sale_amount and closing.credit_sale_amount > 0 %}
+                <span class="text-danger">→ no customer</span>
             {% endif %}</td></tr>
         <tr><th>Expenses Paid</th><td>{{ "%.2f"|format(closing.expenses_paid) }}</td></tr>
         <tr class="table-success"><th>Cash to Head Office</th><td class="fw-bold">{{ "%.2f"|format(closing.cash_submitted_to_head_office) }}</td></tr>

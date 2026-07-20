@@ -47,6 +47,7 @@ from app.petrol_pumps.models import (
     LubricantSale,
     MachineReading,
     PumpDailyClosing,
+    PumpDailyClosingCreditSale,
     PumpExpense,
     PumpMachine,
     PumpNozzle,
@@ -4726,10 +4727,12 @@ def lubricant_sales_delete(sale_id):
 # Daily Closings
 # --------------------------------------------------------------------------- #
 # Only the NON-CASH amounts are entered by the accountant; cash received and
-# cash submitted are derived (total sale − non-cash − expenses).
+# cash submitted are derived (total sale − non-cash − expenses). credit_sale_amount
+# is NOT here — it's derived from the itemized credit-customer rows, not typed
+# directly (see _parse_credit_rows).
 PAYMENT_INPUT_KEYS = [
     "bank_card_received", "pso_card_amount", "easypaisa_amount",
-    "jazzcash_amount", "bank_transfer_amount", "credit_sale_amount",
+    "jazzcash_amount", "bank_transfer_amount",
 ]
 
 # Non-cash methods that route the money to a chosen account. Each entry:
@@ -4802,17 +4805,64 @@ def _pump_customers(pump_id):
     )
 
 
-def _validate_credit_customer(pump_id, payment_inputs, customer_id, errors):
-    """A credit sale MUST name the customer it was given to (one of this pump's
-    customers), so it lands in that customer's ledger to clear later."""
-    credit = payment_inputs.get("credit_sale_amount") or Decimal("0")
-    if credit and credit > 0:
+def _read_credit_rows():
+    """Rebuild submitted credit-sale rows (customer + amount pairs) — a single
+    day can have several credit customers, so this is a list, not one field."""
+    customers = request.form.getlist("credit_row_customer_id")
+    amounts = request.form.getlist("credit_row_amount")
+    rows = []
+    for i in range(max(len(customers), 1)):
+        rows.append({
+            "customer_id": customers[i].strip() if i < len(customers) else "",
+            "amount": amounts[i].strip() if i < len(amounts) else "",
+        })
+    return rows
+
+
+def _parse_credit_rows(pump_id, errors):
+    """Parse+validate the submitted credit rows. Blank rows (no customer AND no
+    amount) are silently skipped. Returns (parsed_rows, total) where each parsed
+    row is {"customer": Customer, "amount": Decimal}."""
+    raw_rows = _read_credit_rows()
+    parsed = []
+    total = Decimal("0")
+    for row in raw_rows:
+        customer_id = _int_or_none(row["customer_id"])
+        amount_raw = row["amount"]
+        if customer_id is None and not amount_raw:
+            continue  # blank row — ignore
         if customer_id is None:
             errors.append("Credit Sale: choose which customer the credit was given to.")
-            return
-        cust = db.session.get(Customer, customer_id)
-        if cust is None or not cust.is_active or cust.petrol_pump_id != pump_id:
+            continue
+        customer = db.session.get(Customer, customer_id)
+        if customer is None or not customer.is_active or customer.petrol_pump_id != pump_id:
             errors.append("Credit Sale: select one of this pump's customers.")
+            continue
+        amount = _parse_nonneg(amount_raw, f"Credit sale for {customer.name}", errors, default=None)
+        if amount is None:
+            continue
+        if amount <= 0:
+            continue
+        parsed.append({"customer": customer, "amount": amount})
+        total += amount
+    return parsed, total
+
+
+def _sync_credit_rows(closing, parsed_rows):
+    """Replace this closing's credit-sale line items with the submitted rows.
+    PumpDailyClosingCreditSale is a leaf table (nothing references it), so a
+    full delete-and-recreate here is always FK-safe. Deletes each row through
+    the ORM (not a bulk query.delete()) so the session's identity map stays
+    consistent — a bulk delete skips that bookkeeping, which can misregister a
+    freshly inserted row that happens to reuse the same auto-increment id."""
+    existing = PumpDailyClosingCreditSale.query.filter_by(daily_closing_id=closing.id).all()
+    for row in existing:
+        db.session.delete(row)
+    db.session.flush()
+    for row in parsed_rows:
+        db.session.add(PumpDailyClosingCreditSale(
+            daily_closing_id=closing.id, customer_id=row["customer"].id, amount=row["amount"],
+        ))
 
 
 def _closing_duplicate(pump_id, closing_date, exclude_id=None):
@@ -5001,7 +5051,7 @@ def daily_closings_list():
                 eform[key] = ""
             for (_a, _at, fld, _l, _t) in CLOSING_DEPOSIT_METHODS:
                 eform[fld] = None
-            eform["credit_customer_id"] = None
+            eform["credit_rows"] = [{"customer_id": "", "amount": ""}]
             entry = {
                 "form": eform,
                 "preview": calculate_daily_closing_summary(pump.id, entry_date, {}),
@@ -5041,10 +5091,10 @@ def daily_closings_create():
 
         payment_inputs = _read_payment_inputs(errors)
         account_ids = _read_deposit_accounts()
-        credit_customer_id = _int_or_none(request.form.get("credit_customer_id"))
+        credit_rows, credit_total = _parse_credit_rows(pump_id, errors)
+        payment_inputs["credit_sale_amount"] = credit_total
         if pump is not None:
             _validate_deposit_accounts(pump.id, payment_inputs, account_ids, errors)
-            _validate_credit_customer(pump.id, payment_inputs, credit_customer_id, errors)
 
         if pump and closing_date and _closing_duplicate(pump.id, closing_date):
             errors.append("A daily closing already exists for this pump and date.")
@@ -5071,11 +5121,11 @@ def daily_closings_create():
         )
         _apply_summary_to_closing(closing, summary, payment_inputs)
         _apply_deposit_accounts(closing, account_ids)
-        closing.credit_customer_id = credit_customer_id if (payment_inputs.get("credit_sale_amount") or Decimal("0")) > 0 else None
         if closing.manager_approved:
             closing.approved_by_id = current_user.id
         db.session.add(closing)
         db.session.flush()
+        _sync_credit_rows(closing, credit_rows)
         posting.sync_daily_closing(closing)
         _sync_closing_bank(closing)
         _sync_closing_pso_card(closing)
@@ -5107,7 +5157,7 @@ def daily_closings_create():
         form[key] = ""
     for (_amt, _attr, field, _label, _types) in CLOSING_DEPOSIT_METHODS:
         form[field] = None
-    form["credit_customer_id"] = None
+    form["credit_rows"] = [{"customer_id": "", "amount": ""}]
     return render_template("petrol_pumps/daily_closings/form.html", form=form, mode="create", preview=preview, pumps=_active_pumps(), pump_accounts=_pump_accounts(pump_id), method_accounts=_method_accounts(pump_id), deposit_methods=CLOSING_DEPOSIT_METHODS, credit_customers=_pump_customers(pump_id))
 
 
@@ -5117,12 +5167,13 @@ def _closing_form_from_request():
         "closing_date": request.form.get("closing_date", "").strip(),
         "remarks": request.form.get("remarks", "").strip(),
         "manager_approved": bool(request.form.get("manager_approved")),
-        "credit_customer_id": _int_or_none(request.form.get("credit_customer_id")),
     }
     for key in PAYMENT_INPUT_KEYS:
         form[key] = request.form.get(key, "").strip()
     for (_amt, _attr, field, _label, _types) in CLOSING_DEPOSIT_METHODS:
         form[field] = _int_or_none(request.form.get(field))
+    rows = _read_credit_rows()
+    form["credit_rows"] = rows if rows else [{"customer_id": "", "amount": ""}]
     return form
 
 
@@ -5151,9 +5202,9 @@ def daily_closings_edit(closing_id):
         errors = []
         payment_inputs = _read_payment_inputs(errors)
         account_ids = _read_deposit_accounts()
-        credit_customer_id = _int_or_none(request.form.get("credit_customer_id"))
+        credit_rows, credit_total = _parse_credit_rows(closing.petrol_pump_id, errors)
+        payment_inputs["credit_sale_amount"] = credit_total
         _validate_deposit_accounts(closing.petrol_pump_id, payment_inputs, account_ids, errors)
-        _validate_credit_customer(closing.petrol_pump_id, payment_inputs, credit_customer_id, errors)
         if calculate_daily_closing_summary(closing.petrol_pump_id, closing.closing_date, payment_inputs)["payment_mismatch"]:
             errors.append("Non-cash amounts exceed the total sale — please check the figures.")
         if errors:
@@ -5169,7 +5220,7 @@ def daily_closings_edit(closing_id):
         summary = calculate_daily_closing_summary(closing.petrol_pump_id, closing.closing_date, payment_inputs)
         _apply_summary_to_closing(closing, summary, payment_inputs)
         _apply_deposit_accounts(closing, account_ids)
-        closing.credit_customer_id = credit_customer_id if (payment_inputs.get("credit_sale_amount") or Decimal("0")) > 0 else None
+        _sync_credit_rows(closing, credit_rows)
         closing.remarks = request.form.get("remarks", "").strip() or None
         closing.manager_approved = bool(request.form.get("manager_approved"))
         closing.approved_by_id = current_user.id if closing.manager_approved else None
@@ -5193,10 +5244,12 @@ def daily_closings_edit(closing_id):
         "jazzcash_amount": str(closing.jazzcash_amount),
         "bank_transfer_amount": str(closing.bank_transfer_amount),
         "credit_sale_amount": str(closing.credit_sale_amount),
-        "credit_customer_id": closing.credit_customer_id,
     }
     for (_amt, account_attr, field, _label, _types) in CLOSING_DEPOSIT_METHODS:
         form[field] = getattr(closing, account_attr)
+    form["credit_rows"] = [
+        {"customer_id": row.customer_id, "amount": str(row.amount)} for row in closing.credit_sales
+    ] or [{"customer_id": "", "amount": ""}]
     preview = calculate_daily_closing_summary(closing.petrol_pump_id, closing.closing_date, form)
     return render_template("petrol_pumps/daily_closings/form.html", form=form, mode="edit", closing=closing, preview=preview, pumps=_active_pumps(), pump_accounts=_pump_accounts(closing.petrol_pump_id), method_accounts=_method_accounts(closing.petrol_pump_id), deposit_methods=CLOSING_DEPOSIT_METHODS, credit_customers=_pump_customers(closing.petrol_pump_id))
 

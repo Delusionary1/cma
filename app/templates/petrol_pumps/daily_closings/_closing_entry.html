@@ -107,20 +107,26 @@
             <tr>
                 <th class="text-danger">− Credit Sale</th>
                 <td>
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text">PKR</span>
-                        <input type="number" step="0.01" min="0" class="form-control dc-amt"
-                               name="credit_sale_amount" value="{{ form.credit_sale_amount }}"
-                               data-amt placeholder="0">
-                        <select class="form-select" name="credit_customer_id" style="max-width:230px;">
-                            <option value="">— customer (who took credit) —</option>
-                            {% for cu in credit_customers %}
-                            <option value="{{ cu.id }}" {{ "selected" if form.credit_customer_id == cu.id else "" }}>{{ cu.name }}</option>
-                            {% endfor %}
-                        </select>
+                    <div id="dcCreditRows">
+                        {% for row in form.credit_rows %}
+                        <div class="input-group input-group-sm mb-1 dc-credit-row">
+                            <select class="form-select" name="credit_row_customer_id" style="max-width:230px;">
+                                <option value="">— customer (who took credit) —</option>
+                                {% for cu in credit_customers %}
+                                <option value="{{ cu.id }}" {{ "selected" if row.customer_id|string == cu.id|string else "" }}>{{ cu.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <span class="input-group-text">PKR</span>
+                            <input type="number" step="0.01" min="0" class="form-control dc-amt"
+                                   name="credit_row_amount" value="{{ row.amount }}"
+                                   data-amt placeholder="0">
+                            <button type="button" class="btn btn-outline-danger dc-credit-remove" title="Remove this customer">&times;</button>
+                        </div>
+                        {% endfor %}
                     </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary mt-1" id="dcAddCredit">+ Add another credit customer</button>
                     {% if credit_customers %}
-                    <div class="form-text">Receivable — goes to that customer's ledger to clear later.</div>
+                    <div class="form-text">One day can have several credit customers — add a row per customer; each is a receivable that goes to that customer's own ledger.</div>
                     {% else %}
                     <div class="form-text text-warning">No customers for this pump yet — add one in <a href="{{ url_for('master_data.customers_create') }}">Master Data → Customers</a> (Business Unit = Petrol Pump Retail).</div>
                     {% endif %}
@@ -162,9 +168,11 @@ function recalc(){
     afterExpEl.textContent=fmt.format(afterExp);
     var running=afterExp,noncash=0;
     flow.querySelectorAll("tbody tr").forEach(function(tr){
-        var amtEl=tr.querySelector("[data-amt]");
-        if(!amtEl)return;
-        var v=parseFloat(amtEl.value)||0;
+        var amtEls=tr.querySelectorAll("[data-amt]");
+        if(!amtEls.length)return;
+        // A row can hold several amounts (e.g. one per credit customer) — sum them all.
+        var v=0;
+        amtEls.forEach(function(el){v+=parseFloat(el.value)||0;});
         noncash+=v;running-=v;
         var rc=tr.querySelector(".dc-running");
         if(rc)rc.textContent=fmt.format(running);
@@ -174,6 +182,31 @@ function recalc(){
 }
 flow.addEventListener("input",function(e){if(e.target.matches("[data-amt]"))recalc();});
 recalc();
+
+// Add/remove credit-customer rows.
+var creditRows=document.getElementById("dcCreditRows"),addBtn=document.getElementById("dcAddCredit");
+if(creditRows&&addBtn){
+    addBtn.addEventListener("click",function(){
+        var first=creditRows.querySelector(".dc-credit-row");
+        var clone=first.cloneNode(true);
+        clone.querySelectorAll("select").forEach(function(s){s.value="";});
+        clone.querySelectorAll("input").forEach(function(i){i.value="";});
+        creditRows.appendChild(clone);
+        recalc();
+    });
+    creditRows.addEventListener("click",function(e){
+        var btn=e.target.closest(".dc-credit-remove");
+        if(!btn)return;
+        var rows=creditRows.querySelectorAll(".dc-credit-row");
+        if(rows.length<=1){
+            // Keep at least one row — just clear it instead of removing.
+            btn.closest(".dc-credit-row").querySelectorAll("select,input").forEach(function(el){el.value="";});
+        }else{
+            btn.closest(".dc-credit-row").remove();
+        }
+        recalc();
+    });
+}
 })();
 </script>
 {% endif %}

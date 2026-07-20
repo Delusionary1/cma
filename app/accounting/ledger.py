@@ -19,6 +19,7 @@ from app.petrol_pumps.models import (
     LubricantSale,
     PsoCardPayment,
     PumpDailyClosing,
+    PumpDailyClosingCreditSale,
     PumpPurchase,
 )
 from app.bulk_sale.models import BulkSale
@@ -40,11 +41,12 @@ def _sum(amount_col, *filters):
 # Customers (receivables)
 # --------------------------------------------------------------------------- #
 def customer_pump_credit_total(customer_id):
-    """Credit sales booked against this customer in pump daily closings."""
+    """Credit sales booked against this customer across pump daily closings
+    (a closing may have several credit customers, each its own line item)."""
     return _sum(
-        PumpDailyClosing.credit_sale_amount,
-        PumpDailyClosing.is_active.is_(True),
-        PumpDailyClosing.credit_customer_id == customer_id,
+        PumpDailyClosingCreditSale.amount,
+        PumpDailyClosingCreditSale.customer_id == customer_id,
+        PumpDailyClosingCreditSale.daily_closing.has(PumpDailyClosing.is_active.is_(True)),
     )
 
 
@@ -86,11 +88,18 @@ def customer_ledger(customer):
     for s in LubricantSale.query.filter_by(customer_id=customer.id, is_active=True, payment_method="Credit Customer").all():
         entries.append({"date": s.sale_date, "description": f"Lubricant sale #{s.id} ({s.product.name})",
                         "debit": Decimal(str(s.total_amount)), "credit": _ZERO})
-    for cl in PumpDailyClosing.query.filter_by(credit_customer_id=customer.id, is_active=True).all():
-        if (cl.credit_sale_amount or 0) > 0:
-            entries.append({"date": cl.closing_date,
-                            "description": f"Credit fuel sale — daily closing #{cl.id}",
-                            "debit": Decimal(str(cl.credit_sale_amount)), "credit": _ZERO})
+    credit_rows = (
+        PumpDailyClosingCreditSale.query
+        .join(PumpDailyClosing)
+        .filter(PumpDailyClosingCreditSale.customer_id == customer.id,
+                PumpDailyClosing.is_active.is_(True))
+        .all()
+    )
+    for row in credit_rows:
+        if (row.amount or 0) > 0:
+            entries.append({"date": row.daily_closing.closing_date,
+                            "description": f"Credit fuel sale — daily closing #{row.daily_closing_id}",
+                            "debit": Decimal(str(row.amount)), "credit": _ZERO})
     for r in CustomerReceipt.query.filter_by(customer_id=customer.id, is_active=True).all():
         entries.append({"date": r.receipt_date, "description": f"Receipt #{r.id} ({r.payment_method})",
                         "debit": _ZERO, "credit": Decimal(str(r.amount))})
@@ -126,10 +135,11 @@ def customer_statement(customer):
          "charges": _sum(LubricantSale.total_amount, LubricantSale.is_active.is_(True),
                          LubricantSale.customer_id == cid, LubricantSale.payment_method == "Credit Customer")},
         {"business": "Petrol Pump (credit fuel sale)",
-         "deals": PumpDailyClosing.query.filter(
-             PumpDailyClosing.credit_customer_id == cid,
-             PumpDailyClosing.is_active.is_(True),
-             PumpDailyClosing.credit_sale_amount > 0).count(),
+         "deals": PumpDailyClosingCreditSale.query.filter(
+             PumpDailyClosingCreditSale.customer_id == cid,
+             PumpDailyClosingCreditSale.amount > 0,
+             PumpDailyClosingCreditSale.daily_closing.has(PumpDailyClosing.is_active.is_(True)),
+         ).count(),
          "charges": customer_pump_credit_total(cid)},
     ]
     charges = sum((s["charges"] for s in segments), _ZERO)

@@ -587,11 +587,6 @@ class PumpDailyClosing(db.Model):
     # JSON snapshot of what was actually credited [{account_id, amount}, ...], so
     # edits / deactivation reverse the exact prior postings idempotently.
     deposit_posted = db.Column(db.Text, nullable=True)
-    # Which customer the credit_sale_amount is owed by (required when there is a
-    # credit sale) — so the credit lands in that customer's ledger to clear later.
-    credit_customer_id = db.Column(
-        db.Integer, db.ForeignKey("customers.id"), nullable=True
-    )
     remarks = db.Column(db.String(300), nullable=True)
     manager_approved = db.Column(db.Boolean, nullable=False, default=False)
     approved_by_id = db.Column(
@@ -613,15 +608,44 @@ class PumpDailyClosing(db.Model):
     easypaisa_account = db.relationship("CashBankAccount", foreign_keys=[easypaisa_account_id])
     jazzcash_account = db.relationship("CashBankAccount", foreign_keys=[jazzcash_account_id])
     bank_transfer_account = db.relationship("CashBankAccount", foreign_keys=[bank_transfer_account_id])
-    credit_customer = db.relationship("Customer", foreign_keys=[credit_customer_id])
     approved_by = db.relationship("User", foreign_keys=[approved_by_id])
     created_by = db.relationship("User", foreign_keys=[created_by_id])
+    credit_sales = db.relationship(
+        "PumpDailyClosingCreditSale", back_populates="daily_closing",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         return (
             f"<PumpDailyClosing id={self.id} date={self.closing_date} "
             f"total={self.total_sale_amount}>"
         )
+
+
+class PumpDailyClosingCreditSale(db.Model):
+    """One customer's share of a daily closing's credit sale — a single day can
+    have several credit customers, so this is a line item, not a single field."""
+
+    __tablename__ = "pump_daily_closing_credit_sales"
+
+    id = db.Column(db.Integer, primary_key=True)
+    daily_closing_id = db.Column(
+        db.Integer, db.ForeignKey("pump_daily_closings.id"), nullable=False
+    )
+    customer_id = db.Column(
+        db.Integer, db.ForeignKey("customers.id"), nullable=False
+    )
+    amount = db.Column(db.Numeric(16, 2), nullable=False, default=0)
+    created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
+    updated_at = db.Column(
+        db.DateTime, nullable=False, default=_utcnow, onupdate=_utcnow
+    )
+
+    daily_closing = db.relationship("PumpDailyClosing", back_populates="credit_sales")
+    customer = db.relationship("Customer")
+
+    def __repr__(self):
+        return f"<PumpDailyClosingCreditSale id={self.id} amount={self.amount}>"
 
 
 # Pump staff designations (BRD §6.9) and shift options.
