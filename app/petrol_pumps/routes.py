@@ -265,7 +265,7 @@ def _apply_shift_mode(query, shift_mode):
 
 
 PUMP_SUMMARY_PERIODS = [
-    ("day", "Day"), ("night", "Night"), ("7days", "7 Days"),
+    ("night", "Night"), ("day", "Day"), ("7days", "7 Days"),
     ("month", "This Month"), ("lastmonth", "Last Month"),
 ]
 
@@ -276,9 +276,13 @@ def index():
     """Petrol Pumps landing page with a per-pump quick-overview band."""
     pumps = _active_pumps()
     pump = _selected_pump(pumps)
-    period = request.args.get("period", "day")
+    # Night is entered first each day (see the Reading Console), so it's the
+    # default tab too — otherwise the default "Day" tab shows nothing right
+    # after a Night entry, since Day/Night here are shift filters, not just
+    # date ranges.
+    period = request.args.get("period", "night")
     if period not in dict(PUMP_SUMMARY_PERIODS):
-        period = "day"
+        period = "night"
 
     summary = None
     if pump is not None:
